@@ -470,8 +470,83 @@ function addAiMessage(answer, citations, scope) {
   if (citations.length) openCitation(citations[0]);
 }
 
-async function send() {
-  const question = input.value.trim();
+function addAbstentionMessage(data) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  const mini = document.createElement('div');
+  mini.className = 'mini-ai';
+  mini.textContent = '🤖';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble abstention-bubble';
+  bubble.textContent = data.answer || 'Chưa tìm thấy nguồn phù hợp.';
+
+  if (Array.isArray(data.suggestions) && data.suggestions.length) {
+    const label = document.createElement('p');
+    label.className = 'follow-up-label';
+    label.textContent = 'Có thể bạn đang muốn hỏi về:';
+    bubble.append(label);
+    const row = document.createElement('div');
+    row.className = 'follow-up-options';
+    data.suggestions.forEach(suggestion => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'suggestion';
+      button.textContent = suggestion.label;
+      button.addEventListener('click', () => send(suggestion.query));
+      row.append(button);
+    });
+    bubble.append(row);
+  }
+  msg.append(mini, bubble);
+  messages.append(msg);
+  scrollToBottom();
+}
+
+function addClarificationMessage(data) {
+  const clarification = data.clarification;
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  const mini = document.createElement('div');
+  mini.className = 'mini-ai';
+  mini.textContent = '🤖';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble clarification-bubble';
+  bubble.textContent = clarification.question;
+  const row = document.createElement('div');
+  row.className = 'follow-up-options';
+  (clarification.options || []).forEach(option => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'suggestion';
+    button.textContent = option.label;
+    button.addEventListener('click', () => {
+      const finalQuery = `${clarification.original_query} Chủ đề: ${option.label}`;
+      send(finalQuery);
+    });
+    row.append(button);
+  });
+  bubble.append(row);
+  msg.append(mini, bubble);
+  messages.append(msg);
+  scrollToBottom();
+}
+
+function addTutorErrorMessage(message) {
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  const mini = document.createElement('div');
+  mini.className = 'mini-ai';
+  mini.textContent = '🤖';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble tutor-error';
+  bubble.textContent = message || 'Không thể xử lý yêu cầu lúc này.';
+  msg.append(mini, bubble);
+  messages.append(msg);
+  scrollToBottom();
+}
+
+async function send(questionOverride = null) {
+  const question = (questionOverride ?? input.value).trim();
   if (!question) return;
   removeWelcome();
   addUserMessage(question);
@@ -499,7 +574,15 @@ async function send() {
     const data = await response.json();
     if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Câu hỏi không hợp lệ hoặc máy chủ chưa sẵn sàng.');
     removeTypingIndicator();
-    addAiMessage(data.answer, data.citations || [], scope);
+    if (data.status === 'abstained') {
+      addAbstentionMessage(data);
+    } else if (data.status === 'needs_clarification' && data.clarification) {
+      addClarificationMessage(data);
+    } else if (data.status === 'error') {
+      addTutorErrorMessage(data.message);
+    } else {
+      addAiMessage(data.answer || data.message || '', data.citations || [], scope);
+    }
   } catch (error) {
     removeTypingIndicator();
     status.textContent = error.message || 'Không kết nối được máy chủ.';
@@ -513,5 +596,5 @@ async function send() {
 sendButton.addEventListener('click', send);
 input.addEventListener('keydown', event => { if (event.key === 'Enter') send(); });
 document.querySelectorAll('.suggestion[data-ask]').forEach(button => {
-  button.addEventListener('click', () => { input.value = button.dataset.ask; send(); });
+  button.addEventListener('click', () => send(button.dataset.ask));
 });

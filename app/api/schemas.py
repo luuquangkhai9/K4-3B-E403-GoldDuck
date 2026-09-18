@@ -1,6 +1,6 @@
 """Shared HTTP request and response contracts."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -57,6 +57,28 @@ class Citation(BaseModel):
     viewer_url: str = ""
 
 
+class Suggestion(BaseModel):
+    id: str
+    label: str
+    query: str
+
+
+class ClarificationOption(BaseModel):
+    id: str
+    label: str
+
+
+class Clarification(BaseModel):
+    original_query: str
+    question: str
+    options: list[ClarificationOption]
+
+
 class QAResponse(BaseModel):
     answer: str
+    status: Literal["answered", "abstained", "needs_clarification", "error"] = "answered"
+    message: str = ""
     citations: list[Citation] = Field(default_factory=list)
+    sources: list[dict] = Field(default_factory=list)
+    suggestions: list[Suggestion] = Field(default_factory=list)
+    clarification: Clarification | None = None

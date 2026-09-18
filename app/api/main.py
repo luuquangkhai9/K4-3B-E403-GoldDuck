@@ -10,7 +10,14 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.schemas import AskRequest, MindmapRequest, QAResponse
+from app.api.schemas import (
+    AskRequest,
+    Clarification,
+    ClarificationOption,
+    MindmapRequest,
+    QAResponse,
+    Suggestion,
+)
 from app.viewer.evidence import normalized_bbox, resolve_pdf, viewer_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +27,43 @@ log = logging.getLogger(__name__)
 app = FastAPI(title="Lecture QA", version="0.1.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 _service_lock = Lock()
+
+ABSTENTION_SUGGESTIONS = [
+    Suggestion(id="attention", label="Attention mechanism", query="Attention mechanism"),
+    Suggestion(id="multi_head_attention", label="Multi-head attention", query="Multi-head attention"),
+]
+
+
+def _is_ambiguous(question: str) -> bool:
+    text = question.strip().lower()
+    has_known_topic = any(topic in text for topic in ("transformer", "attention", "rnn"))
+    return len(text) < 15 or (
+        text.startswith(("nó ", "cái đó ", "cái này ", "điều đó ", "thứ đó "))
+        and not has_known_topic
+    )
+
+
+def _clarification_response(question: str) -> QAResponse:
+    return QAResponse(
+        status="needs_clarification",
+        answer="",
+        clarification=Clarification(
+            original_query=question,
+            question="Bạn muốn hỏi rõ hơn về chủ đề nào?",
+            options=[
+                ClarificationOption(id="transformer", label="Transformer"),
+                ClarificationOption(id="attention", label="Attention"),
+            ],
+        ),
+    )
+
+
+def _abstained_response() -> QAResponse:
+    return QAResponse(
+        status="abstained",
+        answer="Chưa tìm thấy nguồn phù hợp.",
+        suggestions=ABSTENTION_SUGGESTIONS,
+    )
 
 
 def get_services():
@@ -108,12 +152,18 @@ def generate_mindmap(request: MindmapRequest):
 @app.post("/api/ask", response_model=QAResponse)
 def ask(request: AskRequest):
     try:
+        if _is_ambiguous(request.question):
+            return _clarification_response(request.question)
         retrieval, qa = get_services()
         top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
         retrieved = retrieval.retrieve(question=request.question, top_k=top_k, scope=request.scope)
+        if not retrieved.get("evidence"):
+            return _abstained_response()
         result = qa.answer(question=request.question, evidence=retrieved.get("evidence", []))
+        if not result.get("citations"):
+            return _abstained_response()
         # Validate the contract and always create local, correctly encoded source links.
-        response = QAResponse.model_validate(result)
+        response = QAResponse(status="answered", **result)
         for citation in response.citations:
             citation.bbox = normalized_bbox(citation.bbox)
             citation.viewer_url = viewer_url(citation.model_dump())
