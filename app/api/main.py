@@ -11,8 +11,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.schemas import AskRequest, DayCatalog, DayDetail, DaySlidesPage, QAResponse
-from app.ingestion.metadata import normalize_day_id
+from app.api.schemas import AskRequest, DayCatalog, DayDetail, DaySlidesPage, MindmapIntentRequest, MindmapOverviewRequest, MindmapRequest, QAResponse
+from app.ingestion.metadata import normalize_day_id, resolve_day_scope
 from app.runtime import bounded_lock, configured_timeout, configure_windows_runtime, request_deadline
 from app.viewer.evidence import normalized_bbox, resolve_pdf, viewer_url
 
@@ -116,11 +116,8 @@ def process_ask(request):
     try:
         retrieval, qa = get_services()
         top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
-        if request.day_id is not None:
-            require_day(request.day_id)
-            retrieved = retrieval.retrieve(question=request.question, top_k=top_k, day_id=request.day_id)
-        else:
-            retrieved = retrieval.retrieve(question=request.question, top_k=top_k)
+        filters = require_filters(request.day_id, request.scope)
+        retrieved = retrieval.retrieve(question=request.question, top_k=top_k, **filters)
         result = qa.answer(question=request.question, evidence=retrieved.get("evidence", []))
         # Validate the contract and always create local, correctly encoded source links.
         payload = dict(result)
@@ -166,6 +163,81 @@ def process_ask(request):
     except Exception as exc:
         log.exception("Question processing failed")
         raise HTTPException(500, "Không xử lý được câu hỏi. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
+
+
+def require_filters(day_id=None, scope=None):
+    try:
+        resolve_day_scope(day_id, scope)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    for day in dict.fromkeys((scope or []) + ([day_id] if day_id is not None else [])):
+        require_day(day)
+    filters = {}
+    if day_id is not None:
+        filters["day_id"] = day_id
+    if scope:
+        filters["scope"] = scope
+    return filters
+
+
+def run_mindmap(operation, *, seconds=None):
+    with request_deadline(seconds if seconds is not None else configured_timeout("REQUEST_TIMEOUT_SECONDS", 45)):
+        try:
+            return operation()
+        except HTTPException:
+            raise
+        except FileNotFoundError as exc:
+            raise HTTPException(503, "Chưa có chỉ mục PDF. Hãy chạy python scripts/ingest.py.") from exc
+        except TimeoutError as exc:
+            raise HTTPException(503, "Hệ thống đang bận hoặc quá thời gian tạo sơ đồ; vui lòng thử lại.") from exc
+        except Exception as exc:
+            log.warning("Mindmap operation failed (%s)", type(exc).__name__)
+            raise HTTPException(500, "Không tạo được sơ đồ tư duy. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
+
+
+@app.get("/api/mindmap")
+def mindmap(day: str):
+    def generate():
+        retrieval, metadata = require_day(day)
+        _, qa = get_services()
+        canonical = metadata["day_id"]
+        nodes = retrieval.mindmap_nodes(canonical)
+        organized = qa.organize_mindmap(metadata["day_label"], nodes) if nodes else None
+        return {"day": canonical, "branches": organized} if organized else retrieval.mindmap(canonical)
+    return run_mindmap(generate)
+
+
+@app.post("/api/mindmap/intent")
+def mindmap_intent(request: MindmapIntentRequest):
+    def extract():
+        retrieval, qa = get_services()
+        try:
+            intent = qa.extract_mindmap_intent(request.message, retrieval.available_scopes)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return intent or {"day": None, "topic": None}
+    return run_mindmap(extract, seconds=8)
+
+
+@app.post("/api/mindmap/overview")
+def overview_mindmap(request: MindmapOverviewRequest):
+    def generate():
+        retrieval, qa = get_services()
+        require_filters(scope=request.scope)
+        days = [(day, retrieval.mindmap_nodes(day)) for day in request.scope]
+        return qa.overview_mindmap(days)
+    return run_mindmap(generate)
+
+
+@app.post("/api/mindmap/generate")
+def generate_mindmap(request: MindmapRequest):
+    def generate():
+        retrieval, qa = get_services()
+        filters = require_filters(request.day_id, request.scope)
+        top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
+        retrieved = retrieval.retrieve(question=request.topic, top_k=top_k, **filters)
+        return qa.mindmap(topic=request.topic, evidence=retrieved.get("evidence", []))
+    return run_mindmap(generate)
 
 
 @app.get("/")

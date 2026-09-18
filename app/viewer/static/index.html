@@ -1,11 +1,130 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hỏi đáp bài giảng</title><link rel="stylesheet" href="/static/style.css"></head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>VLearn - Trợ giảng AI</title>
+<link rel="stylesheet" href="/static/style.css?v=rag-mindmap-merge">
+</head>
 <body>
-<h1>Hỏi đáp bài giảng</h1>
-<p class="muted">Đặt câu hỏi về các PDF đã lập chỉ mục. Mở nguồn để kiểm tra bằng chứng trên slide.</p>
-<form id="ask-form"><label for="day">Ngày học</label><select id="day"><option value="">Tất cả ngày học</option></select><p id="day-status" class="muted" role="status"></p><label for="question">Câu hỏi</label><textarea id="question" rows="3" maxlength="4000" required placeholder="Gradient descent là gì?"></textarea><button id="ask" type="submit">Hỏi</button></form>
-<p id="status" role="status" aria-live="polite"></p>
-<section id="result" hidden><h2>Câu trả lời</h2><article id="answer"></article><h2>Nguồn bằng chứng</h2><div id="sources"></div><details id="debug" hidden><summary>Thông tin kiểm tra</summary><pre id="debug-content"></pre></details></section>
-<script src="/static/app.js" defer></script>
-</body></html>
+<header class="header">
+  <div class="brand">
+    <div class="logo"></div>
+    <div class="brand-name"><span>V</span>Learn</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-item" href="#"><span class="nav-icon">⌂</span> Trang chủ</a>
+    <a class="nav-item" href="#"><span class="nav-icon">▣</span> Khóa học</a>
+    <a class="nav-item active" href="#"><span class="nav-icon">♧</span> Trợ giảng AI</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚗</span> Lab <span class="badge new">Mới</span></a>
+  </nav>
+
+  <div class="header-right">
+    <div class="divider"></div>
+    <div class="lang">EN <span class="vi">VI</span></div>
+    <span>☾</span>
+    <span>♧</span>
+    <div class="avatar">N</div>
+  </div>
+</header>
+
+<main class="page">
+  <section class="ai-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="card scope">
+      <h3 class="section-title">PHẠM VI HỌC TẬP</h3>
+      <div class="scope-note">
+        Chọn phạm vi để Trợ giảng AI chỉ dùng đúng nội dung buổi bạn đang ôn, không lan man.
+      </div>
+      <div class="scope-note" id="day-status" role="status" aria-live="polite" hidden></div>
+      <div id="scope-list">
+        <div class="scope-item active" id="scope-all">📚 Toàn khóa học</div>
+      </div>
+    </aside>
+
+    <!-- CHATBOT -->
+    <section class="card chat">
+      <div class="chat-head">
+        <button type="button" class="scope-toggle" id="scope-toggle" title="Ẩn/hiện phạm vi học tập" aria-label="Ẩn/hiện phạm vi học tập">☰</button>
+        <div class="ai-avatar">🤖</div>
+        <div>
+          <h2>Trợ giảng AI</h2>
+          <div class="online" id="online-status">Đang sẵn sàng hỗ trợ bạn học</div>
+        </div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon">🤖</div>
+          <h3>Xin chào! Mình là Trợ giảng AI</h3>
+          <p>
+            Mình có thể giải thích bài giảng, tóm tắt nội dung,
+            đưa ví dụ và giúp bạn hiểu bài theo cách dễ hiểu hơn — luôn kèm trích dẫn từ đúng slide.
+          </p>
+
+          <div class="suggestions">
+            <button type="button" class="suggestion" data-ask="Prototype là gì?">Prototype là gì?</button>
+            <button type="button" class="suggestion" data-ask="Tool calling là gì?">Tool calling là gì?</button>
+            <button type="button" class="suggestion" data-ask="Cho tôi một ví dụ dễ hiểu">Cho tôi một ví dụ</button>
+            <button type="button" class="suggestion" data-ask="Tạo mindmap buổi 3">🧠 Tạo mindmap buổi 3</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <p id="status" role="status" aria-live="polite"></p>
+        <div class="input-wrap">
+          <input id="input" type="text" maxlength="4000" placeholder="Hỏi Trợ giảng AI về bài học...">
+          <button class="send" id="send" type="button" aria-label="Gửi câu hỏi">➤</button>
+        </div>
+        <div class="composer-note">Trợ giảng AI trả lời dựa trên tài liệu khóa học được chọn.</div>
+      </div>
+    </section>
+
+    <!-- SLIDE -->
+    <aside class="card slide">
+      <div class="slide-head">
+        <div class="slide-title" id="slide-title">Chưa chọn nguồn</div>
+        <div class="slide-meta" id="slide-sub">Bấm vào một trích dẫn để xem đúng trang gốc</div>
+        <div class="slide-controls" id="slide-controls" hidden>
+          <button class="ctrl" id="prev" type="button" aria-label="Trang trước">‹</button>
+          <div class="slide-no" id="page-label">Slide 1</div>
+          <button class="ctrl" id="next" type="button" aria-label="Trang sau">›</button>
+          <a class="ctrl" id="original-link" target="_blank" rel="noopener noreferrer">Mở PDF gốc</a>
+        </div>
+      </div>
+
+      <div class="pdf">
+        <div class="pdf-label" id="slide-status"></div>
+        <div class="fake-slide" id="slide-empty">
+          <div class="fake-slide-empty">Slide gốc sẽ hiện ở đây khi bạn bấm vào một nguồn trích dẫn.</div>
+        </div>
+        <div class="page-wrap" id="page-wrap" hidden>
+          <img id="slide-image" alt="Trang PDF chứa bằng chứng">
+          <div class="highlight" id="highlight" hidden></div>
+        </div>
+      </div>
+    </aside>
+
+  </section>
+</main>
+
+<div class="mindmap-overlay" id="mindmap-overlay" hidden>
+  <div class="mindmap-panel">
+    <div class="mindmap-head">
+      <div>
+        <h3 id="mindmap-title">Sơ đồ tư duy</h3>
+        <div class="mindmap-feedback" id="mindmap-feedback" hidden></div>
+      </div>
+      <button type="button" class="mindmap-close" id="mindmap-close" aria-label="Đóng sơ đồ tư duy">✕</button>
+    </div>
+    <div class="mindmap-body" id="mindmap-body"></div>
+  </div>
+</div>
+
+<script src="/static/app.js?v=rag-mindmap-day-ranges" defer></script>
+</body>
+</html>

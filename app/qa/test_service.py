@@ -2,14 +2,31 @@
 
 import copy
 import os
+import json
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
 from .generator import AnswerGenerator
-from .prompts import INSUFFICIENT_EVIDENCE, SYSTEM_PROMPT
+from .prompts import (
+    INSUFFICIENT_EVIDENCE,
+    INTENT_SYSTEM_PROMPT,
+    MINDMAP_SYSTEM_PROMPT,
+    ORGANIZE_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+)
 from .service import QAService, prepare_evidence
+
+
+def mindmap_node(**updates):
+    item = {
+        "label": "Retrieval cơ bản", "filename": "Day05/gv.pdf", "page_number": 3,
+        "bbox": [0.1, 0.1, 0.5, 0.2], "slide_id": "doc_p0003",
+        "viewer_url": "/viewer?file=Day05%2Fgv.pdf&page=3",
+    }
+    item.update(updates)
+    return item
 
 
 def source(**updates):
@@ -33,9 +50,11 @@ class FakeGenerator:
     def __init__(self, output):
         self.output = output
         self.prompt = None
+        self.instructions = None
 
-    def generate(self, prompt):
+    def generate(self, prompt, *, instructions=None):
         self.prompt = prompt
+        self.instructions = instructions
         if isinstance(self.output, Exception):
             raise self.output
         return self.output
@@ -219,6 +238,172 @@ class QATests(unittest.TestCase):
         self.assertEqual(captured["input"], "evidence-only-input")
         self.assertFalse(captured["store"])
         self.assertNotIn("tools", captured)
+
+    def test_openai_adapter_accepts_custom_instructions(self):
+        captured = {}
+        def create(**kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(output_text="{}", status="completed")
+        client = SimpleNamespace(responses=SimpleNamespace(create=create))
+        generator = AnswerGenerator(client=client, model="configured-model")
+        generator.generate("input", instructions="custom rules")
+        self.assertEqual(captured["instructions"], "custom rules")
+
+    def test_openai_adapter_omits_temperature_unless_explicitly_set(self):
+        # Reasoning-tier models (the default gpt-5.6 included) reject an
+        # explicit temperature outright ("Unsupported parameter") — omitting
+        # it by default avoids turning every call into a 400.
+        captured = {}
+        def create(**kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(output_text="{}", status="completed")
+        client = SimpleNamespace(responses=SimpleNamespace(create=create))
+        AnswerGenerator(client=client).generate("input")
+        self.assertNotIn("temperature", captured)
+        captured.clear()
+        AnswerGenerator(client=client, temperature=0.0).generate("input")
+        self.assertEqual(captured["temperature"], 0.0)
+
+    def test_mindmap_without_model_returns_extractive_branch(self):
+        result = QAService(generator=AnswerGenerator(api_key="")).mindmap("RAG", [source()])
+        self.assertEqual(result["title"], "RAG")
+        self.assertEqual(len(result["branches"]), 1)
+        node = result["branches"][0]["nodes"][0]
+        self.assertIn(source()["quote"][:40], node["label"])
+        self.assertEqual(node["bbox"], source()["bbox"])
+
+    def test_mindmap_empty_evidence_returns_no_branches(self):
+        generator = FakeGenerator("must not be used")
+        result = QAService(generator=generator).mindmap("RAG", [])
+        self.assertEqual(result, {"title": "RAG", "branches": []})
+        self.assertIsNone(generator.prompt)
+
+    def test_mindmap_parses_json_and_drops_invalid_evidence_ids(self):
+        evidence = [source(), source(block_id="b2", quote="Đoạn hai")]
+        generated = json.dumps({
+            "branches": [
+                {"label": "Truy xuất", "children": [
+                    {"label": "Ý một", "evidence_id": "E1"},
+                    {"label": "Ý bịa", "evidence_id": "E999"},
+                ]},
+                {"label": "Rỗng", "children": [{"label": "x", "evidence_id": "E404"}]},
+                {"label": "Sinh câu trả lời", "children": [{"label": "Ý hai", "evidence_id": "E2"}]},
+            ]
+        })
+        generator = FakeGenerator(generated)
+        result = QAService(generator=generator).mindmap("RAG", evidence)
+        self.assertEqual(generator.instructions, MINDMAP_SYSTEM_PROMPT)
+        self.assertEqual([b["label"] for b in result["branches"]], ["Truy xuất", "Sinh câu trả lời"])
+        self.assertEqual(len(result["branches"][0]["nodes"]), 1)
+        self.assertEqual(result["branches"][0]["nodes"][0]["filename"], evidence[0]["filename"])
+        self.assertEqual(result["branches"][0]["nodes"][0]["bbox"], evidence[0]["bbox"])
+
+    def test_mindmap_falls_back_on_invalid_json_or_error(self):
+        for output in ("not json", "{}", json.dumps({"branches": "nope"})):
+            result = QAService(generator=FakeGenerator(output)).mindmap("RAG", [source()])
+            self.assertEqual(len(result["branches"]), 1)
+        result = QAService(generator=FakeGenerator(TimeoutError())).mindmap("RAG", [source()])
+        self.assertEqual(len(result["branches"]), 1)
+
+    def test_organize_mindmap_groups_by_index_and_drops_unused(self):
+        nodes = [mindmap_node(label=f"Slide {i}", page_number=i) for i in range(4)]
+        generated = json.dumps({
+            "branches": [
+                {"label": "Nhóm A", "indices": [0, 2]},
+                {"label": "Trùng/bịa", "indices": [2, 99, "x"]},  # 2 already used, 99 & "x" invalid
+            ]
+        })
+        generator = FakeGenerator(generated)
+        branches = QAService(generator=generator).organize_mindmap("Day05", nodes)
+        self.assertEqual(generator.instructions, ORGANIZE_SYSTEM_PROMPT)
+        self.assertEqual(branches[0], {"label": "Nhóm A", "nodes": [nodes[0], nodes[2]]})
+        # This is a representative overview, not a full index: the whole
+        # "Trùng/bịa" branch had no valid new index so it's dropped, and
+        # nodes 1 and 3 (never assigned to any branch) are simply left out
+        # rather than forced into a catch-all.
+        self.assertEqual([b["label"] for b in branches], ["Nhóm A"])
+
+    def test_organize_mindmap_caps_nodes_per_branch(self):
+        nodes = [mindmap_node(label=f"Slide {i}", page_number=i) for i in range(10)]
+        generated = json.dumps({"branches": [{"label": "Nhóm A", "indices": list(range(10))}]})
+        branches = QAService(generator=FakeGenerator(generated)).organize_mindmap("Day05", nodes)
+        self.assertEqual(len(branches[0]["nodes"]), 6)
+
+    def test_organize_mindmap_returns_none_without_model_or_nodes(self):
+        self.assertIsNone(QAService(generator=AnswerGenerator(api_key="")).organize_mindmap("Day05", [mindmap_node()]))
+        self.assertIsNone(QAService(generator=FakeGenerator("must not be used")).organize_mindmap("Day05", []))
+
+    def test_organize_mindmap_falls_back_on_invalid_json_or_error(self):
+        nodes = [mindmap_node()]
+        for output in ("not json", "{}", json.dumps({"branches": "nope"})):
+            self.assertIsNone(QAService(generator=FakeGenerator(output)).organize_mindmap("Day05", nodes))
+        self.assertIsNone(QAService(generator=FakeGenerator(TimeoutError())).organize_mindmap("Day05", nodes))
+
+    def test_extract_mindmap_intent_returns_validated_day_and_topic(self):
+        generator = FakeGenerator(json.dumps({"day": "Day07", "topic": "transformer"}))
+        result = QAService(generator=generator).extract_mindmap_intent(
+            "cho tôi xem mindmap của buổi học số 7 về transformer", ["Day01", "Day07"]
+        )
+        self.assertEqual(generator.instructions, INTENT_SYSTEM_PROMPT)
+        self.assertEqual(result, {"day": "Day07", "topic": "transformer"})
+
+    def test_extract_mindmap_intent_rejects_day_not_in_available_list(self):
+        generator = FakeGenerator(json.dumps({"day": "Day99", "topic": "RAG"}))
+        result = QAService(generator=generator).extract_mindmap_intent("...", ["Day01", "Day07"])
+        self.assertEqual(result, {"day": None, "topic": "RAG"})
+
+    def test_extract_mindmap_intent_returns_none_when_unusable(self):
+        for output in ("not json", json.dumps({"day": None, "topic": None}), json.dumps({"day": None, "topic": "  "})):
+            result = QAService(generator=FakeGenerator(output)).extract_mindmap_intent("...", ["Day01"])
+            self.assertIsNone(result)
+        self.assertIsNone(QAService(generator=AnswerGenerator(api_key="")).extract_mindmap_intent("...", ["Day01"]))
+        self.assertIsNone(QAService(generator=FakeGenerator(TimeoutError())).extract_mindmap_intent("...", ["Day01"]))
+        self.assertIsNone(QAService(generator=FakeGenerator("must not be used")).extract_mindmap_intent("   ", ["Day01"]))
+
+    def test_mindmap_retains_metadata_and_rejects_malformed_source_ids(self):
+        output = json.dumps({"branches": [{"label": "Nhóm", "children": [
+            {"label": "Hỏng", "evidence_id": ["E1"]},
+            {"label": "Thật", "evidence_id": "E1", "filename": "fake.pdf", "page_number": 999},
+        ]}]})
+        evidence = source(filename="Day07/lecture.pdf", day_id="Day07", day_number=7, day_label="Day 07", evidence_type="visual", vision_used=True)
+        result = QAService(generator=FakeGenerator(output)).mindmap("RAG", [evidence])
+        nodes = result["branches"][0]["nodes"]
+        self.assertEqual(len(nodes), 1)
+        for key in ("filename", "page_number", "quote", "day_id", "day_number", "day_label", "evidence_type", "vision_used"):
+            self.assertEqual(nodes[0][key], evidence[key])
+
+    def test_mindmap_respects_threshold_and_explicit_model_abstention(self):
+        generator = FakeGenerator(json.dumps({"branches": []}))
+        self.assertEqual(QAService(generator=generator).mindmap("Unknown", [source()])["branches"], [])
+        with patch.dict(os.environ, {"NO_ANSWER_THRESHOLD": "0.8"}):
+            unused = FakeGenerator("must not run")
+            result = QAService(generator=unused).mindmap("Unknown", [source(block_score=0.1)])
+            self.assertEqual(result["branches"], [])
+            self.assertIsNone(unused.prompt)
+
+    def test_custom_instructions_keep_request_deadline(self):
+        from app.runtime import request_deadline
+        captured = {}
+        client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kw: captured.update(kw) or SimpleNamespace(output_text="{}", status="completed")))
+        with request_deadline(0.5):
+            AnswerGenerator(client=client, temperature=0).generate("input", instructions="mindmap rules")
+        self.assertGreater(captured["timeout"], 0)
+        self.assertLessEqual(captured["timeout"], 0.5)
+        self.assertEqual(captured["instructions"], "mindmap rules")
+        self.assertEqual(captured["temperature"], 0)
+
+    def test_overview_covers_days_model_omits_and_balances_input(self):
+        # A model picks only Day01: Day02 must still have a real source branch.
+        generator = FakeGenerator(json.dumps({"branches": [{"label": "Selected", "indices": [0]}]}))
+        nodes = []
+        for day, count in (("Day01", 600), ("Day02", 20)):
+            nodes.append((day, [mindmap_node(slide_id=f"{day}_{index}", day_id=day, label=f"Topic {index}") for index in range(count)]))
+        overview = QAService(generator=generator).overview_mindmap(nodes)
+        self.assertEqual([branch["label"] for branch in overview["branches"]], ["Day 01", "Day 02"])
+        self.assertTrue(all(1 <= len(branch["nodes"]) <= 6 for branch in overview["branches"]))
+        self.assertTrue(all(node["day_id"] == day for (day, _), branch in zip(nodes, overview["branches"]) for node in branch["nodes"]))
+        self.assertIn("Day02: Topic", generator.prompt)
+        self.assertLess(len(generator.prompt), 20000)
 
 
 if __name__ == "__main__":

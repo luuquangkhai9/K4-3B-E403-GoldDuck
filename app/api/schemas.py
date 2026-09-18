@@ -5,9 +5,15 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 
+def _clean_scope(value: list[str] | None) -> list[str] | None:
+    from app.ingestion.metadata import normalize_scope
+    return normalize_scope(value)
+
+
 class AskRequest(BaseModel):
     question: Annotated[str, Field(min_length=1, max_length=4000)]
     day_id: str | None = None
+    scope: list[str] | None = Field(default=None, max_length=50)
 
     @field_validator("day_id", mode="before")
     @classmethod
@@ -22,6 +28,57 @@ class AskRequest(BaseModel):
         if not value:
             raise ValueError("Vui lòng nhập câu hỏi.")
         return value
+
+    @field_validator("scope")
+    @classmethod
+    def clean_scope(cls, value: list[str] | None) -> list[str] | None:
+        return _clean_scope(value)
+
+
+class MindmapRequest(BaseModel):
+    topic: Annotated[str, Field(min_length=1, max_length=200)]
+    day_id: str | None = None
+    scope: list[str] | None = Field(default=None, max_length=50)
+
+    @field_validator("day_id", mode="before")
+    @classmethod
+    def validate_day(cls, value):
+        from app.ingestion.metadata import normalize_day_id
+        return normalize_day_id(value) if value is not None else None
+
+    @field_validator("topic")
+    @classmethod
+    def strip_topic(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Vui lòng nhập chủ đề sơ đồ tư duy.")
+        return value
+
+    @field_validator("scope")
+    @classmethod
+    def clean_scope(cls, value: list[str] | None) -> list[str] | None:
+        return _clean_scope(value)
+
+
+class MindmapIntentRequest(BaseModel):
+    message: Annotated[str, Field(min_length=1, max_length=4000)]
+
+    @field_validator("message")
+    @classmethod
+    def strip_message(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Vui lòng nhập nội dung.")
+        return value
+
+
+class MindmapOverviewRequest(BaseModel):
+    scope: list[str] = Field(min_length=1, max_length=50)
+
+    @field_validator("scope")
+    @classmethod
+    def clean_scope(cls, value):
+        return _clean_scope(value)
 
 
 class Citation(BaseModel):

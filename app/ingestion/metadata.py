@@ -29,6 +29,27 @@ def infer_day_id(filename):
     return next(iter(days)) if len(days) == 1 else None
 
 
+def normalize_scope(scope):
+    """Canonical Day IDs; an empty list means the whole course."""
+    if scope is None:
+        return None
+    if not isinstance(scope, (list, tuple)):
+        raise ValueError("Scope must be a list of learning days")
+    days = list(dict.fromkeys(normalize_day_id(day) for day in scope))
+    return days or None
+
+
+def resolve_day_scope(day_id=None, scope=None):
+    """Intersect the legacy single-day filter with a multi-day selection."""
+    days = normalize_scope(scope)
+    if day_id is not None:
+        canonical = normalize_day_id(day_id)
+        if days is not None and canonical not in days:
+            raise ValueError("Ngày học không nằm trong phạm vi đã chọn.")
+        return [canonical]
+    return days
+
+
 def day_metadata(day_id):
     canonical = normalize_day_id(day_id) if day_id is not None else None
     number = int(canonical[3:]) if canonical is not None else None
@@ -49,6 +70,7 @@ def record_day_metadata(record):
 def enrich_slide_metadata(slide, document=None):
     result = dict(slide)
     result.update(record_day_metadata(document if document is not None else slide))
+    result["day"] = result["day_id"]
     filename = slide["filename"]
     result.setdefault("document_id", "doc_" + hashlib.sha256(filename.encode("utf-8")).hexdigest()[:16])
     result["document_title"] = document["title"] if document is not None else slide.get(

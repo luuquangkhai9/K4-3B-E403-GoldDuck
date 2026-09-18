@@ -28,6 +28,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> 
             "path": path.as_posix(),
             "total_pages": len(pdf),
             **learning_day,
+            "day": learning_day["day_id"],
         }
         for page_index, page in enumerate(pdf):
             width, height = float(page.rect.width), float(page.rect.height)
@@ -57,6 +58,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> 
                 "document_title": document["title"],
                 "document_total_pages": document["total_pages"],
                 **learning_day,
+                "day": learning_day["day_id"],
                 "filename": source_name,
                 "page_index": page_index,
                 "page_number": page_index + 1,

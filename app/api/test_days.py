@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -165,3 +167,109 @@ class LearningDayIntegrationTests(unittest.TestCase):
         self.assertEqual(result["debug"]["block_ranking_method"], "e5")
         self.assertFalse(result["debug"]["block_ranking_fallback"])
         self.assertTrue(all(s["day_id"] == "Day01" for s in result["primary_slides"] + result["context_slides"] + result["evidence"]))
+
+    def test_multi_day_scope_normalizes_and_keeps_citations_in_scope(self):
+        response = self.client.post("/api/ask", json={"question": "Shared concept", "scope": ["d1", "day 2", "Day01"]})
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["debug"]["scope_filter"], ["Day01", "Day02"])
+        self.assertEqual({c["day_id"] for c in result["citations"]}, {"Day01", "Day02"})
+        scoped = self.retrieval.retrieve("Shared concept", top_k=20, scope=["D01"])
+        self.assertTrue(all(s["day_id"] == "Day01" for s in scoped["primary_slides"] + scoped["context_slides"] + scoped["evidence"]))
+
+    def test_scope_and_legacy_day_intersect_and_reject_conflicts(self):
+        for endpoint, field in (("/api/ask", "question"), ("/api/mindmap/generate", "topic")):
+            response = self.client.post(endpoint, json={field: "Shared concept", "day_id": "D01", "scope": ["D01", "D02"]})
+            self.assertEqual(response.status_code, 200, response.text)
+            result = response.json()
+            sources = result["citations"] if field == "question" else [n for b in result["branches"] for n in b["nodes"]]
+            self.assertTrue(sources)
+            self.assertEqual({s["day_id"] for s in sources}, {"Day01"})
+            conflict = self.client.post(endpoint, json={field: "Shared concept", "day_id": "D01", "scope": ["D02"]})
+            self.assertEqual(conflict.status_code, 422, conflict.text)
+        with self.assertRaises(ValueError):
+            self.retrieval.retrieve("Shared", day_id="Day01", scope=["Day02"])
+
+    def test_invalid_scope_fails_closed_for_qa_and_mindmap(self):
+        for endpoint, field in (("/api/ask", "question"), ("/api/mindmap/generate", "topic")):
+            for scope, status in ((["Day99"], 404), (["Day01", "Day99"], 404), (["nope"], 422), (["Day0"], 422), ([""], 422), ("Day01", 422)):
+                with self.subTest(endpoint=endpoint, scope=scope):
+                    self.assertEqual(self.client.post(endpoint, json={field: "Shared", "scope": scope}).status_code, status)
+            self.assertEqual(self.client.post(endpoint, json={field: "Shared", "scope": []}).status_code, 200)
+
+    def test_mindmap_day_alias_and_topic_sources_open_real_pages(self):
+        overview = self.client.get("/api/mindmap?day=D01")
+        self.assertEqual(overview.status_code, 200, overview.text)
+        self.assertEqual(overview.json()["day"], "Day01")
+        for node in [n for branch in overview.json()["branches"] for n in branch["nodes"]]:
+            self.assertEqual(node["day_id"], "Day01")
+            self.assertEqual(self.client.get(node["viewer_url"]).status_code, 200)
+        topic = self.client.post("/api/mindmap/generate", json={"topic": "Alpha", "day_id": "D01"})
+        self.assertEqual(topic.status_code, 200, topic.text)
+        sources = [n for branch in topic.json()["branches"] for n in branch["nodes"]]
+        self.assertTrue(sources)
+        for node in sources:
+            self.assertEqual(node["day_id"], "Day01")
+            self.assertIn("alpha", node["quote"].lower())
+            self.assertEqual(self.client.get(node["viewer_url"]).status_code, 200)
+            self.assertEqual(self.client.get("/api/page", params={"file": node["filename"], "page": node["page_number"]}).status_code, 200)
+        self.assertEqual(self.client.get("/api/mindmap?day=Day99").status_code, 404)
+        self.assertEqual(self.client.get("/api/mindmap?day=invalid").status_code, 422)
+
+    def test_busy_mindmap_returns_503_and_health_still_works(self):
+        locked, release = threading.Event(), threading.Event()
+        def hold():
+            with self.retrieval._lock:
+                locked.set()
+                release.wait(5)
+        thread = threading.Thread(target=hold)
+        thread.start()
+        self.assertTrue(locked.wait(1))
+        try:
+            with patch.dict(os.environ, {"REQUEST_TIMEOUT_SECONDS": "0.1"}):
+                for method, endpoint, body in (("get", "/api/mindmap?day=Day01", None), ("post", "/api/mindmap/generate", {"topic": "Alpha"})):
+                    started = time.monotonic()
+                    response = self.client.request(method, endpoint, json=body)
+                    self.assertEqual(response.status_code, 503, response.text)
+                    self.assertLess(time.monotonic() - started, 1)
+            self.assertEqual(self.client.get("/api/health").status_code, 200)
+        finally:
+            release.set()
+            thread.join(1)
+
+    def test_available_scopes_use_metadata_including_blank_day(self):
+        path = self.index_dir / "slides.json"
+        records = json.loads(path.read_text(encoding="utf-8"))
+        records[-1].update(day_id="Day03", day_number=3, day_label="Day 03")
+        # Metadata is authoritative even when the filename has no Day prefix.
+        records[0]["filename"] = "nested/custom/alpha.pdf"
+        path.write_text(json.dumps(records), encoding="utf-8")
+        self.assertEqual(self.retrieval.available_scopes, ["Day01", "Day02", "Day03"])
+        self.assertTrue(any(n["filename"] == "nested/custom/alpha.pdf" for n in self.retrieval.mindmap_nodes("D01")))
+        self.assertEqual(self.client.get("/api/mindmap?day=Day03").json()["branches"], [])
+
+    def test_day_range_intent_and_overview_work_without_model(self):
+        path = self.pdf_dir / "Day03/d.pdf"
+        path.parent.mkdir()
+        with pymupdf.open() as pdf:
+            page = pdf.new_page()
+            page.insert_text((40, 80), "Agent orchestration and tool calling.")
+            pdf.save(path)
+        ingest_pdfs(self.pdf_dir, self.index_dir / "slides.json")
+        response = self.client.post("/api/mindmap/intent", json={"message": "tao mindmap từ day 1 đến day 3"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json(), {"day": None, "scope": ["Day01", "Day02", "Day03"], "topic": None})
+        overview = self.client.post("/api/mindmap/overview", json={"scope": response.json()["scope"]})
+        self.assertEqual(overview.status_code, 200, overview.text)
+        branches = overview.json()["branches"]
+        self.assertEqual([branch["label"] for branch in branches], ["Day 01", "Day 02", "Day 03"])
+        for day, branch in zip(("Day01", "Day02", "Day03"), branches):
+            self.assertTrue(branch["nodes"])
+            for node in branch["nodes"]:
+                self.assertEqual(node["day_id"], day)
+                self.assertEqual(self.client.get(node["viewer_url"]).status_code, 200)
+
+    def test_overview_rejects_empty_unknown_or_invalid_scope(self):
+        for payload, status in (({}, 422), ({"scope": []}, 422), ({"scope": ["Day01", "Day99"]}, 404), ({"scope": ["wrong"]}, 422)):
+            self.assertEqual(self.client.post("/api/mindmap/overview", json=payload).status_code, status)
+        self.assertEqual(self.client.post("/api/mindmap/intent", json={"message": "mindmap day 3 đến day 1"}).status_code, 422)

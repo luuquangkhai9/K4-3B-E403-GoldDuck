@@ -3,7 +3,11 @@
 from typing import TypedDict
 
 
-class LearningDay(TypedDict):
+class _DayAlias(TypedDict, total=False):
+    day: str | None
+
+
+class LearningDay(_DayAlias):
     day_id: str | None
     day_number: int | None
     day_label: str | None
