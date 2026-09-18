@@ -5,6 +5,7 @@ import os
 from urllib.request import Request, urlopen
 
 from .config import enabled, retrieval_text
+from app.runtime import remaining_timeout
 
 
 def rerank(question, slides, top_k):
@@ -30,7 +31,7 @@ def rerank(question, slides, top_k):
         timeout = float(os.getenv("RERANK_TIMEOUT_SECONDS", "10"))
         if not math.isfinite(timeout) or timeout <= 0:
             raise ValueError("invalid_timeout")
-        with urlopen(request, timeout=timeout) as response:
+        with urlopen(request, timeout=remaining_timeout(timeout)) as response:
             results = json.load(response)["results"]
         if not isinstance(results, list) or len(results) != min(top_k, len(slides)):
             raise ValueError("incomplete_response")

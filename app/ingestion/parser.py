@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 
 from .models import Document, SlideRecord, TextBlock
+from .metadata import day_metadata, infer_day_id
 
 
 def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> tuple[Document, list[SlideRecord]]:
@@ -14,6 +15,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> 
 
     path = Path(path)
     source_name = filename if filename is not None else path.name
+    learning_day = day_metadata(infer_day_id(filename if filename is not None else path.as_posix()))
     document_id = "doc_" + hashlib.sha256(source_name.encode("utf-8")).hexdigest()[:16]
     slides: list[SlideRecord] = []
     with fitz.open(path) as pdf:
@@ -25,6 +27,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> 
             "title": (pdf.metadata or {}).get("title") or path.stem,
             "path": path.as_posix(),
             "total_pages": len(pdf),
+            **learning_day,
         }
         for page_index, page in enumerate(pdf):
             width, height = float(page.rect.width), float(page.rect.height)
@@ -51,6 +54,9 @@ def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> 
             slides.append({
                 "slide_id": slide_id,
                 "document_id": document_id,
+                "document_title": document["title"],
+                "document_total_pages": document["total_pages"],
+                **learning_day,
                 "filename": source_name,
                 "page_index": page_index,
                 "page_number": page_index + 1,

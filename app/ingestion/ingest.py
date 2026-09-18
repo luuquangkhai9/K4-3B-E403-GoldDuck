@@ -1,15 +1,14 @@
 """Discover PDFs and atomically replace the slide index."""
 
-import json
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 import logging
-import os
 from pathlib import Path
-import tempfile
 
 from .models import SlideRecord
+from .index import write_slide_index
+from .metadata import build_day_catalog
 from .parser import parse_pdf
 from .vision import VisionConfig, VisionEnricher
 
@@ -67,16 +66,8 @@ def ingest_pdfs(
     # A totally failed run must not destroy a previously usable index.
     if paths and not documents:
         raise RuntimeError("All PDFs failed ingestion; existing index was preserved.")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=output.parent, suffix=".tmp", delete=False) as handle:
-            temporary = Path(handle.name)
-            json.dump(slides, handle, ensure_ascii=False, indent=2, allow_nan=False)
-            handle.write("\n")
-        os.replace(temporary, output)
-    finally:
-        if temporary is not None and temporary.exists():
-            temporary.unlink()
+    catalog = build_day_catalog(slides)
+    write_slide_index(output, slides)
     statuses = Counter(slide.get("visual_analysis", {}).get("status", "disabled") for slide in slides)
-    return {"documents": documents, "slides": len(slides), "errors": errors, "output": str(output), "vision": dict(statuses)}
+    return {"documents": documents, "slides": len(slides), "errors": errors, "output": str(output),
+            "vision": dict(statuses), "catalog": catalog}

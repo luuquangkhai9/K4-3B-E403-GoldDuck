@@ -3,7 +3,13 @@
 from typing import TypedDict
 
 
-class Document(TypedDict):
+class LearningDay(TypedDict):
+    day_id: str | None
+    day_number: int | None
+    day_label: str | None
+
+
+class Document(LearningDay):
     document_id: str
     filename: str
     title: str
@@ -17,9 +23,11 @@ class TextBlock(TypedDict):
     bbox: list[float]
 
 
-class _NativeSlideRecord(TypedDict):
+class _NativeSlideRecord(LearningDay):
     slide_id: str
     document_id: str
+    document_title: str
+    document_total_pages: int
     filename: str
     page_index: int
     page_number: int

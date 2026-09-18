@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import tempfile
 from .config import retrieval_text
+from app.runtime import configure_windows_runtime
 
 # Hugging Face's concurrent cache probe can attempt symlinks before Windows
 # privilege detection finishes. Ordinary file copies need no administrator.
@@ -44,6 +45,7 @@ class DenseIndex:
         ).hexdigest()
 
     def _initialize(self) -> None:
+        configure_windows_runtime()
         from sentence_transformers import SentenceTransformer
 
         try:
@@ -111,9 +113,14 @@ class DenseIndex:
             raise ValueError("Invalid block embeddings")
         return [float(value) for value in scores]
 
-    def search(self, question: str, limit: int = 20) -> list[tuple[int, float]]:
+    def search(self, question: str, limit: int = 20, *, allowed_indices=None) -> list[tuple[int, float]]:
         if self.failed or not self.slides or limit <= 0:
             return []
+        indices = np.arange(len(self.slides)) if allowed_indices is None else np.asarray(allowed_indices, dtype=np.int64)
+        if indices.size == 0:
+            return []
+        if indices.ndim != 1 or np.any(indices < 0) or np.any(indices >= len(self.slides)):
+            raise ValueError("Invalid dense candidate indices")
         try:
             if self.embeddings is None:
                 self._initialize()
@@ -128,7 +135,7 @@ class DenseIndex:
                 raise ValueError("Invalid slide embeddings")
             return [
                 (int(index), float(scores[index]))
-                for index in np.argsort(-scores, kind="stable")[:limit]
+                for index in indices[np.argsort(-scores[indices], kind="stable")[:limit]]
             ]
         except Exception as error:
             self.failed = True

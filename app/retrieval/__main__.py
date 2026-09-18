@@ -7,6 +7,7 @@ import time
 from dotenv import load_dotenv
 
 from .service import PROJECT_ROOT, RetrievalService
+from app.ingestion.metadata import normalize_day_id
 
 
 def main():
@@ -14,12 +15,14 @@ def main():
     parser = argparse.ArgumentParser(description="Build and check the slide retrieval index")
     parser.add_argument("--query", default="MCP và A2A khác nhau như thế nào?")
     parser.add_argument("--require-dense", action="store_true")
+    parser.add_argument("--day", type=normalize_day_id, help="Limit retrieval to a learning day, e.g. Day01 or D01")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    service = RetrievalService(dense_enabled=True)
+    # This explicit offline build command may take longer than an HTTP request.
+    service = RetrievalService(dense_enabled=True, dense_isolated=False)
     print("Loading E5 on CPU and building/reusing embeddings...", flush=True)
     start = time.perf_counter()
-    result = service.retrieve(args.query)
+    result = service.retrieve(args.query, day_id=args.day)
     dense_ready = service.dense is not None and not service.dense.failed and service.dense.embeddings is not None
     print(f"Slides: {len(service.slides)}; dense ready: {dense_ready}; elapsed: {time.perf_counter() - start:.1f}s", flush=True)
     for hit in result["slides"]:

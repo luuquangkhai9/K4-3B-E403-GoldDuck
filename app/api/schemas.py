@@ -7,6 +7,13 @@ from pydantic import BaseModel, Field, field_validator
 
 class AskRequest(BaseModel):
     question: Annotated[str, Field(min_length=1, max_length=4000)]
+    day_id: str | None = None
+
+    @field_validator("day_id", mode="before")
+    @classmethod
+    def validate_day(cls, value):
+        from app.ingestion.metadata import normalize_day_id
+        return normalize_day_id(value) if value is not None else None
 
     @field_validator("question")
     @classmethod
@@ -25,6 +32,10 @@ class Citation(BaseModel):
     bbox: list[float] | None = Field(default=None, min_length=4, max_length=4)
     viewer_url: str = ""
     slide_id: str | None = None
+    document_id: str | None = None
+    day_id: str | None = None
+    day_number: int | None = Field(default=None, ge=1)
+    day_label: str | None = None
     block_id: str | None = None
     source_role: Literal["primary", "neighbor"] = "primary"
     block_score: float | None = None
@@ -43,3 +54,42 @@ class QAResponse(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     grounding: dict[str, Any] | None = None
     debug: dict[str, Any] | None = None
+
+
+class DayDocument(BaseModel):
+    document_id: str
+    filename: str
+    title: str
+    day_id: str | None
+    day_number: int | None = Field(ge=1)
+    day_label: str | None
+    total_pages: int = Field(ge=1)
+    indexed_slides: int = Field(ge=1)
+    searchable_slides: int = Field(ge=0)
+
+
+class DayDetail(BaseModel):
+    day_id: str
+    day_number: int = Field(ge=1)
+    day_label: str
+    document_count: int = Field(ge=1)
+    slide_count: int = Field(ge=1)
+    searchable_slide_count: int = Field(ge=0)
+    documents: list[DayDocument]
+
+
+class DayCatalog(BaseModel):
+    days: list[DayDetail]
+    unassigned_documents: list[DayDocument]
+    unassigned_document_count: int = Field(ge=0)
+    unassigned_slide_count: int = Field(ge=0)
+
+
+class DaySlidesPage(BaseModel):
+    day_id: str
+    day_number: int = Field(ge=1)
+    day_label: str
+    total: int = Field(ge=0)
+    offset: int = Field(ge=0)
+    limit: int = Field(ge=1, le=200)
+    slides: list[dict[str, Any]]

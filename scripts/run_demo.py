@@ -9,6 +9,8 @@ sys.path.insert(0, str(ROOT))
 
 
 def main():
+    from app.runtime import configure_windows_runtime
+    configure_windows_runtime()
     from dotenv import load_dotenv
     import uvicorn
 

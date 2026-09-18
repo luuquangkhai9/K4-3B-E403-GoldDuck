@@ -84,7 +84,7 @@ class RetrievalTests(unittest.TestCase):
         fake = types.ModuleType("sentence_transformers")
         fake.SentenceTransformer = lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("offline"))
         with patch.dict("sys.modules", {"sentence_transformers": fake}):
-            result = RetrievalService(self.path, dense_enabled=True).retrieve("Gradient descent")
+            result = RetrievalService(self.path, dense_enabled=True, dense_isolated=False).retrieve("Gradient descent")
         self.assertEqual(result["slides"][0]["page_number"], 1)
 
     def test_dependency_free_lexical_fallback(self):

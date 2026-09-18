@@ -4,6 +4,7 @@ import os
 from typing import Any
 
 from .prompts import SYSTEM_PROMPT
+from app.runtime import configure_windows_runtime, remaining_timeout
 
 
 class AnswerGenerator:
@@ -27,6 +28,7 @@ class AnswerGenerator:
     def generate(self, prompt: str) -> str:
         if not self.available:
             return ""
+        configure_windows_runtime()
         if self.client is None:
             from openai import OpenAI
 
@@ -39,6 +41,7 @@ class AnswerGenerator:
             input=prompt,
             max_output_tokens=2000,
             store=False,
+            timeout=remaining_timeout(self.timeout),
         )
         if getattr(response, "status", "completed") != "completed":
             return ""

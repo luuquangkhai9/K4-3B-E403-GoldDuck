@@ -4,7 +4,7 @@
 <body>
 <h1>Hỏi đáp bài giảng</h1>
 <p class="muted">Đặt câu hỏi về các PDF đã lập chỉ mục. Mở nguồn để kiểm tra bằng chứng trên slide.</p>
-<form id="ask-form"><label for="question">Câu hỏi</label><textarea id="question" rows="3" maxlength="4000" required placeholder="Gradient descent là gì?"></textarea><button id="ask" type="submit">Hỏi</button></form>
+<form id="ask-form"><label for="day">Ngày học</label><select id="day"><option value="">Tất cả ngày học</option></select><p id="day-status" class="muted" role="status"></p><label for="question">Câu hỏi</label><textarea id="question" rows="3" maxlength="4000" required placeholder="Gradient descent là gì?"></textarea><button id="ask" type="submit">Hỏi</button></form>
 <p id="status" role="status" aria-live="polite"></p>
 <section id="result" hidden><h2>Câu trả lời</h2><article id="answer"></article><h2>Nguồn bằng chứng</h2><div id="sources"></div><details id="debug" hidden><summary>Thông tin kiểm tra</summary><pre id="debug-content"></pre></details></section>
 <script src="/static/app.js" defer></script>

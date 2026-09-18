@@ -233,7 +233,7 @@ class DemoIntegrationTests(unittest.TestCase):
         }
         with patch.dict(os.environ, config), patch.dict("sys.modules", {"sentence_transformers": fake_module}), \
              patch("app.retrieval.rerank.urlopen", side_effect=fake_rerank):
-            app.state.retrieval_service = RetrievalService(self.index_dir, dense_enabled=True)
+            app.state.retrieval_service = RetrievalService(self.index_dir, dense_enabled=True, dense_isolated=False)
             generator = Mock(available=True)
             generator.generate.return_value = "Convolution và pooling [E1]; kernel filters [E2]."
             app.state.qa_service = QAService(generator=generator)

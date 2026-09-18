@@ -9,6 +9,8 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.viewer.evidence import normalized_bbox
+from app.ingestion.metadata import record_day_metadata
+from app.retrieval.query import is_document_discovery
 
 from .generator import AnswerGenerator
 from .prompts import INSUFFICIENT_EVIDENCE, build_prompt
@@ -37,6 +39,10 @@ def prepare_evidence(evidence: Sequence[Mapping[str, Any]]) -> list[dict[str, An
         block_id = raw.get("block_id")
         if block_id is not None and not isinstance(block_id, str):
             continue
+        try:
+            learning_day = record_day_metadata(raw)
+        except ValueError:
+            continue
         key = (filename, page, block_id, quote)
         if key in seen:
             continue
@@ -60,6 +66,8 @@ def prepare_evidence(evidence: Sequence[Mapping[str, Any]]) -> list[dict[str, An
             "slide_id": raw.get("slide_id"),
             "block_id": block_id,
             "filename": filename,
+            "document_id": raw.get("document_id"),
+            **learning_day,
             "page_number": page,
             "quote": quote,
             "bbox": bbox,
@@ -105,7 +113,19 @@ class QAService:
         }
 
     @staticmethod
-    def _extractive(evidence: list[dict[str, Any]]) -> dict[str, Any]:
+    def _extractive(evidence: list[dict[str, Any]], question="") -> dict[str, Any]:
+        if is_document_discovery(question):
+            selected = []
+            seen = set()
+            for item in sorted(evidence, key=lambda item: item["source_role"] == "neighbor"):
+                if item["filename"] not in seen:
+                    seen.add(item["filename"])
+                    selected.append(item)
+            answer = "Các tài liệu liên quan được tìm thấy:\n\n" + "\n\n".join(
+                f"{item['filename']} — {item.get('day_label') or 'chưa xác định ngày học'}: "
+                f"{_CITATION.sub('', item['quote'])} [{item['evidence_id']}]" for item in selected
+            )
+            return QAService._result(answer, selected, fallback=True)
         selected = sorted(evidence, key=lambda item: item["source_role"] == "neighbor")[:3]
         answer = "Các đoạn liên quan được tìm thấy trong bài giảng:\n\n" + "\n\n".join(
             f"{_CITATION.sub('', item['quote'])} [{item['evidence_id']}]" for item in selected
@@ -124,7 +144,7 @@ class QAService:
         if self.no_answer_enabled and self.no_answer_threshold is not None and scores and max(scores) < self.no_answer_threshold:
             return self._result(INSUFFICIENT_EVIDENCE, [], no_answer=True)
         if not self.generator.available:
-            return self._extractive(sources)
+            return self._extractive(sources, question)
         by_id = {item["evidence_id"]: item for item in sources}
         removed = []
         prompt = build_prompt(question, sources)
@@ -162,6 +182,6 @@ class QAService:
                 "\nCORRECTION: Cite every important factual claim using only the provided "
                 "[E1]..[En] IDs. If the evidence is insufficient, return the required abstention sentence."
             )
-        result = self._extractive(sources)
+        result = self._extractive(sources, question)
         result["grounding"].update(invalid_citations_removed=list(dict.fromkeys(removed)), regenerated=regenerated)
         return result

@@ -29,18 +29,41 @@ Cũng có thể chạy `uvicorn app.api.main:app --reload` tại thư mục dự
 
 Điền `OPENAI_API_KEY` và `LLM_MODEL` trong `.env` để dùng LLM. Không có key, QA dùng câu trả lời trích xuất từ bằng chứng. Đặt `DENSE_ENABLED=false` để dùng lexical retrieval khi không tải được mô hình multilingual E5 hoặc muốn khởi động nhanh. Dense retrieval chạy CPU và lần đầu có thể cần mạng để tải mô hình.
 
+Trong demo, E5 chạy trong tiến trình riêng với `DENSE_CPU_THREADS=1`. `DENSE_TIMEOUT_SECONDS=15` giới hạn thời gian truy hồi; `DENSE_BLOCK_TIMEOUT_SECONDS=5` giới hạn xếp hạng bằng chứng. Khi E5 lỗi hoặc quá hạn, tiến trình được dừng và dịch vụ tiếp tục bằng BM25; E5 không được thử lại cho đến khi khởi động lại hoặc chỉ mục thay đổi. Nếu cần tải model hoặc tạo embeddings cho kho lớn, chạy trước `python -m app.retrieval --require-dense`; lệnh chuẩn bị này không chịu timeout HTTP.
+
+`REQUEST_TIMEOUT_SECONDS=45` đặt ngân sách chờ khóa, E5 và các API cho một câu hỏi. API danh mục ngày giới hạn chờ khóa ở 5 giây và trả HTTP 503 nếu đang bận. Giao diện giới hạn chờ câu trả lời ở 60 giây và luôn mở lại nút Hỏi sau lỗi. Sau khi sửa mã hoặc cấu hình, dừng demo bằng `Ctrl+C` rồi chạy lại `python scripts/run_demo.py` để áp dụng.
+
+Trên Windows/Python có cơ chế dò WMI, ứng dụng giới hạn bước đọc thông tin nền tảng ở 250 ms. Nếu WMI không đáp ứng, Python dùng thông tin Windows dự phòng; điều này tránh PyTorch và OpenAI SDK bị treo trước khi timeout truy hồi hoặc HTTP có hiệu lực.
+
 `PDF_DIR`, `INDEX_DIR` mặc định lần lượt là `data/pdf`, `data/index`. `TOP_K` mặc định 5. Ingestion và API đều tự nạp `.env` ở thư mục dự án; biến môi trường của shell được ưu tiên hơn `.env`. Có thể ghi đè đường dẫn ingestion bằng `python scripts/ingest.py --pdf-dir <thư_mục_pdf> --index-dir <thư_mục_index>`. Đường dẫn tương đối được tính từ thư mục dự án. Sau khi thêm hoặc sửa PDF, chạy lại ingestion; retrieval tự nạp lại chỉ mục khi có thay đổi. Nếu thư mục PDF không tồn tại hoặc mọi PDF đều lỗi, ingestion báo lỗi và giữ chỉ mục cũ. Thư mục PDF tồn tại nhưng rỗng sẽ tạo chỉ mục rỗng.
 
 ## API
 
 - `GET /api/health`: `{"status":"ok"}`; xác nhận HTTP server đang chạy, không xác nhận chỉ mục đã sẵn sàng.
 - `POST /api/ask`: nhận `{"question":"Gradient descent là gì?"}`, trả `answer` và `citations` theo `HACKATHON_PLAN.md`.
+- `GET /api/days`: danh sách ngày học, các tài liệu của từng ngày, số slide và tài liệu chưa gán ngày.
+- `GET /api/days/Day01`: metadata của ngày và danh sách tất cả PDF thuộc ngày đó.
+- `GET /api/days/Day01/slides?offset=0&limit=100`: toàn bộ slide của ngày theo thứ tự tên tệp và số trang, có phân trang (tối đa 200 slide mỗi lần).
 - `GET /viewer?file=lecture.pdf&page=7`: trình xem trang; liên kết citation tự mang bbox để không nhầm ID E1 giữa các câu hỏi.
 - `GET /pdf/{filename}`: PDF gốc.
 - `GET /api/page?file=lecture.pdf&page=7`: ảnh PNG của trang, số trang bắt đầu từ 1.
 - `/docs`: tài liệu API tương tác.
 
 Retrieval và QA được tích hợp qua `RetrievalService().retrieve(question, top_k)` và `QAService().answer(question, evidence)`. Khi module chưa có, giao diện vẫn mở được và API trả lỗi dễ đọc. Khi chỉ mục chưa có hoặc rỗng, QA trả thông báo không đủ thông tin và danh sách citation rỗng. Nếu chỉ mục mới sai cấu trúc, retrieval giữ dữ liệu hợp lệ đã nạp và thử nạp lại ở yêu cầu tiếp theo.
+
+## Metadata theo ngày học
+
+Mỗi tài liệu và slide có `day_id` (ví dụ `Day01`), `day_number` (`1`) và `day_label` (`Day 01`). Slide còn lưu `document_id`, `document_title` và `document_total_pages` để liên kết với tài liệu. Một ngày có thể chứa nhiều PDF; API danh mục nhóm tất cả các tệp theo ngày, kể cả slide không có nội dung tìm kiếm. Danh mục được tạo từ chính `slides.json` để đồng bộ với chỉ mục đang dùng.
+
+Thư mục ngày gần tệp nhất là nguồn ưu tiên: `data/pdf/Day01/bai-a.pdf` và `data/pdf/Day01/bai-b.pdf` đều thuộc `Day01`. Nếu không có thư mục ngày, ingestion tìm dấu hiệu ngày rõ ràng trong tên tệp, ví dụ `day01-lecture.pdf` hoặc `1-Day 08 Lecture.pdf`. Tệp không xác định được ngày, hoặc tên chứa nhiều ngày khác nhau, có metadata ngày là `null`; chúng được liệt kê trong `unassigned_documents` và vẫn tìm được khi chọn tất cả ngày. `D01`, `day1` và `1` được chuẩn hóa thành `Day01` trong bộ lọc.
+
+Giao diện có bộ chọn ngày học. Có thể lọc trực tiếp bằng `POST /api/ask` với `{"question":"Embedding là gì?","day_id":"Day07"}` hoặc CLI `python -m app.retrieval --day D07 --query "Embedding là gì?"`. Bộ lọc giới hạn tập tài liệu trước khi BM25/dense chọn top-k; reranker, slide lân cận và citation đều giữ đúng phạm vi ngày. Bỏ `day_id` hoặc dùng `null` để tìm trên toàn kho. Ngày sai định dạng trả HTTP 422; ngày chưa có trong chỉ mục trả HTTP 404.
+
+Với câu hỏi tìm tài liệu như “Tôi muốn học về tranformers, tôi cần học những tài liệu nào nằm ở ngày nào”, truy hồi tách chủ đề học, sửa lỗi gõ gần với thuật ngữ có trong kho và chọn bằng chứng từ nhiều PDF. Câu trả lời liệt kê tên tài liệu cùng ngày học và citation; khi LLM lỗi, câu trả lời trích xuất cũng giữ thông tin này. Danh sách được xếp hạng theo liên quan, không bảo đảm liệt kê mọi tài liệu trong kho.
+
+Để chuẩn bị chức năng tổng hợp kiến thức một ngày, dùng `/api/days/{day_id}` lấy đủ danh sách tài liệu, rồi đọc hết các trang `/api/days/{day_id}/slides` đến khi đủ `total`. Các trang bao gồm cả native text, blocks và phân tích Vision. Kết quả `/api/ask` là các bằng chứng được xếp hạng, không bảo đảm bao phủ mọi bài học trong ngày.
+
+Với chỉ mục đã có Vision, bổ sung metadata bằng `python scripts/update_metadata.py`. Lệnh đọc metadata PDF và cập nhật JSON nguyên tử, giữ slide/block ID, text, bbox và kết quả Vision; không gọi Vision hoặc tính lại embeddings. Những lần ingestion sau tự tạo đầy đủ metadata ngày học.
 
 ## Tích hợp V2
 
