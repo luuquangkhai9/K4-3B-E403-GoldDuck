@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 4695.43,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Dựa trên các tài liệu được cung cấp, tôi không thể tìm thấy thông tin nào về \"YOLO model\" hay trang mà nó được đề cập. Các tài liệu có nói về \"AI model\" [T04-089], \"LLM model\" [T03-024], [T03-036], và \"model\" [T03-078], nhưng không có thông tin cụ thể về YOLO."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1999,
+      "candidatesTokenCount": 97,
+      "totalTokenCount": 2415,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1999
+        }
+      ],
+      "thoughtsTokenCount": 319,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "9aesaoLvNZuXvr0Ptqe8-Ac"
+  }
+}

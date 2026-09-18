@@ -1,0 +1,99 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3114.74,
+  "raw_response": {
+    "id": "resp_01db28ceafed2adc006aacabf88e2087d0abf35d1b43d7499f",
+    "object": "response",
+    "created_at": 1789701112,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701114,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "msg_01db28ceafed2adc006aacabf9bfa487d0a66785c26abd6383",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D02: LLM có thể hallucinate vì đầu ra của nó không hoàn toàn chắc chắn: mô hình có tính đa dạng và sáng tạo, đồng thời các tham số khi gọi API cũng có thể ảnh hưởng đến kết quả. Vì vậy, đúng ở một trường hợp thử nghiệm chưa chắc đúng ở trường hợp khác. [T03-079]\n\nNgoài ra, nếu thiếu thông tin tham chiếu cần thiết—chẳng hạn dữ liệu nội bộ công ty không có trong dữ liệu huấn luyện—LLM có thể không trả lời chính xác; khi đó cần bổ sung thông tin bằng RAG hoặc fine-tune. [T03-036]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1919,
+      "input_tokens_details": {
+        "cache_write_tokens": 1916,
+        "cached_tokens": 0
+      },
+      "output_tokens": 139,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 2058
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

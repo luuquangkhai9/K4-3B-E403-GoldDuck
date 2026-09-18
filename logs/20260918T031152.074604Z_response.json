@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3616.79,
+  "raw_response": {
+    "id": "resp_08a22e4b1b52cfc6006aacabf4c47c87d0bb75c2710d663395",
+    "object": "response",
+    "created_at": 1789701108,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701111,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_08a22e4b1b52cfc6006aacabf51f0c87d0a8f3238b588636de",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrKv3CXZRds64WWcT1l2BqHVSi27FVJpIJ2sEfKT-NsTSX13a3IC8NCSZXwHdKzT1MPG11UwDdLEADIEVb0nP5hKUGPSlDoBFAMmKj1Ip4IjljtygSR_xD8F8G6DLs8hSjqt2hlUp89YgsqZrEQPGjJjvascWbz9TCZc63JUbpNfd3db0lWCvLA5maD6Sb_Gml3XmiBY3E4g8q3c4yGvuCODQinhQHmMBqpiYBRxb9sMMJ5fuuHoWpkDekBuv0CvF5-Lp-zYZWjwEc3QMsGXMmPz58UqJQX6GVCFlB1C7NIbSn_clF9Bqr2g7NNk_k1zIsqKGCJMACOrM9RTt2891yukwaG4Q2geWU032ag5sSUe4AYglshA9LDraY-129R0V0oMQO8_jvB2gkWhb8do4YvdmXQUZEW-hGQJgygkpRfAmAipdSEtBC-ow6F3akfAYqWm53CE0duQEJIKoH_ha4h47ps-lhLYKUGO8w3hanvAHb2P8cFF22lj33FL3YKMjnTvwIIY01q-OoHt8q4kHpVzZ8RqH_OtvKL43Kwb7aAuxFSqHzYSuQNmQi206h4DpjJQGLs9R9WtHRu3SHORthCROLUAHIbtE5kYPg_RJ_Y1OOYpef8cUGi8NW7kshxEYS2Paqzxze09_joZr0fnJ6S5WdDWGDPkDUzte-D6BVKfnNquIueMcx_a0zTzzEydmRFqoSYbcb9O_eFrVkTujZDn7LAffja77o_Re-I_DVZIVbX9W-BMv8T19EtQ-Wzq4MrApXkMhG-81aN1beAxyMu_Ycq1xaLN8SHBpJ_Z0-VP4cBXIKp5GIiVBSDbC3V2NWmQfLmK-LiQ26mWdOfKATu99M5-q02ZQH2bNneOzNWP8vGKruNGMpxgSuf-bsD26MDIjnPdONhIs-c9jaNHrssfpbxZ1ZHEUIBEL9KP69p5jevmCWKAnI1D-JmQJrau7YyGvrEHjLFIASvRHCclFNn7NJJNCT2my-ENoi5eciHxp_UEe20u9PYmmi2sDKvjo6GCW0ZYiOGz3RGYIUelQOzuhh9Ac6ahu1PErPNTW9pDzCJGHs5lDF3eLq1RlY0QQ1b1k9p9V3E8DN6uVYobUENrT5-Vzp9wSRmQo30Cff6PgoPZ0ooiTJtWkd2k5qyHBMQAdnMgeTHsk0vA5fnGl6vM_QhTIyLlc6uxZ6NHWJUU9h_iNmxfszoxDihhO1kvzOc7H9N_D2Sh6RPbkn_k0LtUXsk_RDpnoZauSsL79UE6ZuIMxCXUAUvQ74whsTeeKn-ipbYaZLefVSoc0aLJp8hZzZ7c-VEd7hTaQRwurwOLF4RoU9C3M9htXmD2pdKpUg7d1V-vYsb-A64GTIneqUrsE9HAmoz1WY7NJF6Gt3If0mXNKjy1xA9AaRQMrrf1c33CmcN-vnfPFOiAxnVOW5n-tFo9R4-7BX29fpbbs5aVnlgKABCPAEVP8fpnFomasOgDgm-GTksRWoGkWmU0lAv4KQlInQVze4n85rnoDxeEU3c2FqdAmFPoFSa_IhSxIbCpprerMXStBpV6bZqmSyw3paZqkhlxhHzyFcKAlthSM-PfQehYwa0F6aeUO-wOiNyqOFvxkUGHg3KM-49H2G2_AYHtGxe0VEYra7xOI05-VXMvzD6D51CeAlPWnPlI_UDqtwyUsx7bWaxywx3kAjjiOChuuvwd8Q0U2dzYD-mC_mHwc62VBu2coDPiiChoQ3dgJvfbMO1m30NCYUZqz3IgWuXQcd9x8PF9AAh57CtdbJNveGy4l4gW2w80dukL4Y5jAmB0GGA_XAmU2safBrA9demdJG_bvVzx59DXax6ov9OWJ9jojV9di1TZh4IbZxTskT6zMztw-dUodGRB__D8cLIJ34ltG1j8Iy_NX20DNeERjRokCWncKLin2HB_kPcsPndIF1THqyBP1mLP5F4M6VKIH55SmI5843YHkxdOKQ_die_EzgEEDkNY1-3xA5eqwhfAxs5WS-2JDEEp0nFJ-Gw==",
+        "summary": []
+      },
+      {
+        "id": "msg_08a22e4b1b52cfc6006aacabf60b5487d09657c007fb68d3c1",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "**Day01:** Tìm hiểu khái niệm **context (bối cảnh/ngữ cảnh)** và **context window** — lượng thông tin mô hình có thể tiếp nhận, xử lý trong một lần. Context càng lớn, mô hình càng có thể xử lý nhiều thông tin; nếu vượt giới hạn, cần chia nhỏ và có nguy cơ mất liên kết với phần trước. [T04-051]\n\n**Day02:** Tập trung vào tư duy phát triển sản phẩm AI: xác định bài toán có thực sự cần thiết và đáng làm không, chọn giải pháp phù hợp, rồi viết thành **problem statement** rõ ràng. Buổi học nhấn mạnh hiểu bản chất và đối tượng sử dụng của framework, theo tinh thần “less is more, back to basic”. [T01-017] Ngoài ra, AI có thể hỗ trợ giáo dục như tự động chấm bài, tổng hợp báo cáo, đánh giá mức độ hiểu bài, hỗ trợ thảo luận và tóm tắt nội dung; AI cũng có thể phân loại câu hỏi, tự trả lời câu đơn giản và chuyển câu phức tạp cho trợ giảng chuyên môn. [T01-036] [T01-037]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1399,
+      "input_tokens_details": {
+        "cache_write_tokens": 1396,
+        "cached_tokens": 0
+      },
+      "output_tokens": 392,
+      "output_tokens_details": {
+        "reasoning_tokens": 137
+      },
+      "total_tokens": 1791
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

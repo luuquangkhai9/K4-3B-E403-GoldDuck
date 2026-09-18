@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 5063.69,
+  "raw_response": {
+    "id": "resp_0c428fb39a058771006aacb714c09087d09936f3dff2edb5ea",
+    "object": "response",
+    "created_at": 1789703956,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789703960,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_0c428fb39a058771006aacb715e3e487d089b32a11a0bff455",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrLcYdz5q-RYH1aEAvVqeAXf1OuiOq97liPdjzBXiSC-_cIZ8jAUUqysa3XW9lJLsBIaKfmiyIOeOfNDMGlHen-siABrv_9pYR6mpbXzsSUlEkQgAn8YQ_KHpJk8OM1snPjnQCx6iIGzRF0PpG4iFVs9K3Hm-_nl6fIZ6Pz8y-HGV6j4NRIXiq9orytsxy7lm9_kJ_QliyvZ54mzoDiptZUVF7BAcd3Ee3sBKsdiidZzlap-0kX7DaIZPvZrl7IpLFiesptkzffgX_aT4kn9m0-B-y0rf-acy_xGXXEv_xjrHtA7QMmdQqn0wCbkiZ8ckRqcfJxcaxnd0ELirycYNiRIiHT76yIzSP791Id-rFOmxRQUHDBvWYhxiGQKfpqtAizWO097Q1oay0do8a1suf-NhGSdV_cIjA5_dfP0Ofq44rnS7ld6GLQ9YCBbTqiWW0xOdh9wNph3rmKrBrKUYfO72QDQ_3pJPt350Ehwas00MhFF6AYrmSrinzLMuTuDUgGLsxv6ZLitj-PLo08Zmbgdp9B9IjO4o6Y1vI3MvE8nmi_h9mXcnWHFtUIMZL0De0zArBhj-UBlLpi4RJsgm_c-uXSH079qi_BaRR-0n_cGTE53o9sYyFvx4kjIcDr7y3y3CLHDD2CUv6mVWszXEt6OSvots0degUgZIaYodN2w4cb5egDObTK2k1WhWvXlQt4tnNg7iLMubhK4_2Q3yAZWfVTAvg8DvU_JerECwEo02GZJFWnj5EUKVy8w_fCUCzRH9G6IIAqF0TCcKbTnWBe2LgrUEkUxlvdnWbnKQ4pQawSc_u2WMHfdFSbx7qO8VBBzhAWPXMQn961we6h4MQR3O4LLV6UGaKQld35NSgx6kaq7jPGwlWW-_lCTDz8i0J8iubR_A4-Judf72mm5MziGN1f9WBcSrMy6W0FITW5z8ijoOwf-Hogh9TV1h5QGGDXVXUhGrQCktTCqF-g7jvj6e1IeKcCrh5Q1ZhAWdFTuQu77Ix8-WhkNH43iYe4f3QXQk76q2d3VgQjYyrqX6DDNqPLgr1xG67iJtYH44DE8tdRmzYiNsleuCWRHqylPe66ZDjsve81Gyw_1N3Ag5CZLp_Eqs80XLvp7Y8l7wryjZEA0pKegQ1LSTL1eH7rnz6XCmdxGaLDCeqBJYmb-hLIDZPbEw82abDMrB4iYoaRLf4uNflcmboHtVk1vUnAQPwk4jEP1Xy3My5vsPWSOwiiFzKHJOUKZ1hz_5wS5am1euO3WaoBvUEhx4RozTpAqazrNq6FS8UuiQTd3xCQxDV0VIWndkFaEhqM3BzvzdScnxvDyXYDXBXR10tMIH8rJnfQOTmJWZcnUQwO_uDFcGNDkOQw-b_LHzwXbhNFaeZGiMR5h8tIv38CN1pRA_BywhJAw9OG-3PS961JbhDtTLDN8U801wsZRHwx0bqmk3sLIVUrLteyqlQdrzhYIvrcZfhN7ZIRgtAHv8LlgJhDB6FK7QTEKOiqRMCEy4Qer6Yje52T7f-yhDUT3SEG5_E1SV08bOZPBXUtRYZxEAtHocND9TERS-N47pFGrwKjeU6mId-sFOh1WVs0rM_kmI_8UTkLMKnI2qDi911_bE5zaIQdw9XI_xsC__ez0EGCOZc_s57ai6DZOqKteix-pYFw-bOiOP4FmIaXJcG24aqAN4smLh3FweFSwkuMfWoBQqpkECZvSIjdhVccpY8ORaQuDnpyXeU0ZZhg0Sqe2t5-KMSDv3mJzuGUX6M0p3GqTVOVslNReBjSFERcr-X8nHXiydtQ_h0ukPI1-S7Hfh8HOEKUpNAfEog5wAu1XAKnR8mI1PsSd2yhI9FMkmkbqEZoETWPesBLgRhW5RLA0Eh5TmHt5Gmg21ThCOTEdyWUNIhBc4G7g=",
+        "summary": []
+      },
+      {
+        "id": "msg_0c428fb39a058771006aacb717287087d0ad8867b0a68d6b8a",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "**Day Foundation:** Transformer xử lý theo chuỗi bước: nhận **input token**, chuyển mỗi token thành biểu diễn trong không gian vectơ bằng **embedding**, rồi đưa qua **self-attention**, **feed-forward** và cuối cùng dự đoán **token kế tiếp**. [T06-126]\n\nTrong self-attention, mỗi token “nhìn” các token khác trong cùng ngữ cảnh để xác định mức độ liên quan giữa chúng. Mô hình tạo các trọng số cho từng cặp token, hình thành một ma trận quan hệ để tập trung vào những từ hoặc cụm từ quan trọng. [T06-086] [T04-054]\n\nCơ chế này xử lý các token **song song**, thay vì lần lượt từng chữ, nhờ đó nhận diện được mối liên hệ giữa nhiều từ trong cả câu hoặc đoạn văn. [T06-126] [T04-040]\n\nTransformer còn có **multi-head attention** để nhìn từ nhiều góc độ song song, sau đó dùng mạng **feed-forward** để xử lý phi tuyến tính cho từng vị trí. [T06-086]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1512,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 1509
+      },
+      "output_tokens": 337,
+      "output_tokens_details": {
+        "reasoning_tokens": 101
+      },
+      "total_tokens": 1849
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 4332.54,
+  "raw_response": {
+    "id": "resp_03df03bf3d8b1aa2006aacabd53e9487d094b700ec6ce9518a",
+    "object": "response",
+    "created_at": 1789701077,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701080,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_03df03bf3d8b1aa2006aacabd6239487d092bf16da3f3cb6ee",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrKvYf-J7OjxVvKL5kOf2fS8bqcT8xd1fCP9KVIYt7mkWC8ftEMmshgZ0k8kXOcmix8FmQu7QvKvLlKDrLy_1I5-1al4fqIFX-l-C-rKBWMUfelaf--UmskW6JKNEUCKu5168cuNGdlYjQUEE0zE9qN60VjwkRNu0OZ_y3V38wYSyP8UZwT8DvXJxL9E7boKKcouH8ZOWO5oKNKiX3LVZbQ9ep8-vdoeKHVQfjZinThov5qURyaBOD2IiLvMmwjU67ttiWYigdg4UWZtWhzMMb8rNeOphvWLhVlwoKhULqu5T_wLmetmYPn9o1fDIQB3lqvB1U5jfwtEva0TMXm8ESEFfxAFeF-kA4fcTtzJ_kJJfgyagLDgaO6ttQ0oCF44Piwy6zVQu0Cq161ZM1OOFj9w571a8OXLA504UVwF2IrVv0U0M5c0_8QwVlsbyBv6La5z54_xfl_Fn3AtbPa2B_LpC2nExl0AMgNhTJU3IcJGp8eLbsWMWupAdXMLQLV7JfiUjo5rPIi3NISFXbwzzW8NTHVVnge4MYJQfsfd-KbFpiS0MlqZ98-_IBElnFVeNtrEXgN5p15R-aRjGwuAM92E0RfX8kURHyXutKVusZYgoqI-KMnIo-RVCdxz_zka1-MjNovBtSneXBMuJzEIVW40z-FcKTyO3M2sMT6CbZgyigCY8uZMA6DYSYBNV36MmCPAgcwjGDP9Kb9qfaXg06-IKsTPJiCP1cEGaZx_KVyrDvsqIKntJJZnTe0oFjPjhiCHHYqUfAQu1uLlPehAmfdJGjZcAE2UzzQZI83fkFw3NcdB1qiU_bDeR8NAo9TvK0UOwUVNIm9zZo6Lu_RuM8TUpH4xIhCM5itEb3_td5PkfoabvhTjnMpaQTYerQ5_meTofCjRseO40kQUcuvbS9xUO7ebtv6rvYh-Wy8HuEbYnaCQPosJYZSUyv10-lYwc7ufkfbkemrMpucQ1tDRx7pUOfUoIevowZwOBGqORpHaIhgy0ru2o6mD5QwcX9mbez9F34u4Meq_mUQYnC6mz3MaGlKwjQjmA7Q5ypt9DM3ELaGgVOyzOK-ThInhH3b887kl7XuMFvSEfIgstROnP2BDw0qGyFmKlT7-JlY-bovjxtWBUBykh-W47uige0nu6pwzR1DXKDLJdXCvhvuZijcWPTPQX93lwBLZlVP-nOfnzzmAV0LUlJduIW0V7U9NSWxOGZxHzkI49UQo068C_ss1B2stgGBDE5XY_lxqZK9yqgNK2QESRi0guRMQPgcucuOu8XV5bone4-LAXesdq-0SmW93ERO3kRFal0DgRDgy-ljr2rdq6BE5BtppFUQuxs56lz6bqvMvtJEJ4yGNwDMzvejlwz2RhS7SqelnKGC3_JjmIMyKKziEcV5tAaZwFq_eZ65pGbPKblSoQqgya89by5m8G1ZOudvv454dobBs3U1zd5073GsRz-iWGgAvM4cU8OeMU0QfAohezglRjZ1r860d44FUCXppB0Yud5bPWqn7mct4GuBSZSrapwilpe-JXodWnmGZphg0rjAIKnhPJC6D7Sg5O47twNLZH78TMRd7bGbAUHqlAoQ6pm91rER4ia9mYQ8rTWXbRl5W_SsJdtfstKVfk46MPZ1wFdZpAt7o8iRdkXz5tXi3uCPlbanW5OoMYA421RNtniNtYxpezgOCLvPsifYjcV0HHM_kJKapyN_qm1AG4mq315FId1Uu7WR7I_Ih9Z1uKHanFv1cv2AINKILUCDu3yo-P81UWo2wD8QEzzB2C9kX8BfUu_KMMRQXT0v_CdtoeUuY92w_3EA==",
+        "summary": []
+      },
+      {
+        "id": "msg_03df03bf3d8b1aa2006aacabd7082487d0aefc1f8761c7e6d3",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D01–D02:\n\n- **LLM** là mô hình ngôn ngữ lớn, nền tảng để xây dựng các công cụ và agent. [T04-003]\n- **Agent** là một hệ thống dùng LLM để thực hiện công việc qua nhiều bước; có thể tự xác định yêu cầu, tìm kiếm thông tin, xử lý, so sánh, đánh giá và kiểm chứng kết quả. [T03-037]\n- Vì vậy, **LLM giống như “bộ não/người xử lý ngôn ngữ”**, còn **agent là hệ thống hoàn chỉnh dùng LLM kết hợp với luồng hành động và các công cụ**. Trong workflow, LLM hoặc agent có thể nằm ở từng bước; workflow vẫn đơn giản hơn agent đầy đủ. [T02-037]\n\nVí dụ: gọi LLM để tóm tắt một văn bản là dùng **LLM**; yêu cầu hệ thống tự tìm dữ liệu, phân tích rồi tạo báo cáo là dùng **agent**. [T01-033]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 2015,
+      "input_tokens_details": {
+        "cache_write_tokens": 2012,
+        "cached_tokens": 0
+      },
+      "output_tokens": 330,
+      "output_tokens_details": {
+        "reasoning_tokens": 107
+      },
+      "total_tokens": 2345
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

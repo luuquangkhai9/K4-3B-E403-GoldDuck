@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 7221.19,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "D02\n\nTôi không thể tìm thấy một nguồn đáng tin cậy trong các trích đoạn được cung cấp để giải thích lý do tại sao `import OpenAI` lại được đặt bên trong thân hàm. Các trích đoạn chủ yếu thảo luận về khả năng của LLM, cạnh tranh sản phẩm, MLOps, rủi ro, và các khái niệm liên quan đến AI, mà không đề cập đến chi tiết về cấu trúc mã nguồn hay vị trí của các câu lệnh `import` [T03-037, T01-086, T03-002, T03-015, T03-117]."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1621,
+      "candidatesTokenCount": 142,
+      "totalTokenCount": 2212,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1621
+        }
+      ],
+      "thoughtsTokenCount": 449,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "EaWsauylIIeE1e8P-vvTuQg"
+  }
+}

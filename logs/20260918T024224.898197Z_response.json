@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 3119.35,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "D02. Tôi không thể tìm thấy một nguồn đáng tin cậy cho \"ROI MCP\" trong các đoạn trích khóa học đã cho."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1038,
+      "candidatesTokenCount": 30,
+      "totalTokenCount": 1222,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1038
+        }
+      ],
+      "thoughtsTokenCount": 154,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "DqWsauujCqqY1e8PtevI-Qs"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 5411.94,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "D02. Tôi không thể tìm thấy một nguồn đáng tin cậy. Các đoạn trích có nhắc đến RAG [T03-118] nhưng không giải thích cách RAG giúp câu trả lời có citation. Một đoạn trích khác mô tả việc hệ thống tìm kiếm thông tin bên ngoài để trả lời câu hỏi [T03-132] nhưng cũng không đề cập đến RAG hay việc tạo citation."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1739,
+      "candidatesTokenCount": 91,
+      "totalTokenCount": 2356,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1739
+        }
+      ],
+      "thoughtsTokenCount": 526,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "BqisapboCKHFvr0P1MuOgAo"
+  }
+}

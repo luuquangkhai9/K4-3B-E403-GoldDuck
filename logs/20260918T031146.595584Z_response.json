@@ -1,0 +1,99 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3369.99,
+  "raw_response": {
+    "id": "resp_0d6e3a4f24bec9a5006aacabefdc0487d0baeb348672a7fb31",
+    "object": "response",
+    "created_at": 1789701103,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701106,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "msg_0d6e3a4f24bec9a5006aacabf0d77c87d09d3b3a768dc8e2e5",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D02 có các tài liệu sau:\n\n- **The Design of Everyday Things** — nền tảng về mô hình tư duy của con người và tương tác người–máy/AI. [T01-028]\n- **People + AI Guidebook của Google** — framework về dữ liệu, mental model, kỳ vọng người dùng, niềm tin và cách đưa AI vào sản phẩm; Day D02 tập trung vào xác định nhu cầu người dùng và đánh giá năng lực AI. [T01-029]\n- **Tài liệu về RAG và lựa chọn kỹ thuật khi xây dựng hệ thống AI** — đặc biệt cho chatbot cần hiểu quy tắc, dữ liệu nội bộ công ty. [T03-036]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 2966,
+      "input_tokens_details": {
+        "cache_write_tokens": 2963,
+        "cached_tokens": 0
+      },
+      "output_tokens": 153,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 3119
+    },
+    "user": null,
+    "metadata": {}
+  }
+}
