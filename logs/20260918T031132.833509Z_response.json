@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3513.61,
+  "raw_response": {
+    "id": "resp_0489483530bbba13006aacabe1c31887d087e830884222898f",
+    "object": "response",
+    "created_at": 1789701089,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701092,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_0489483530bbba13006aacabe2244087d08d26bc55683f046d",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrKvklBDPIu4hh7_iSKb7yiJjJTtylP98zLypfBdlaUs4eZM352tdoQWEoEFSo2Pp4ID-MsBsxcXG4_YxJHE4gojNgH9WlqnFK2QNTX9FE65ag7yPieFJLgM-HJ2TF7lWQ6VmYLjYtm4OQfjwfCWqKoBQN_2oFG3Zcke2_ZznyqPY5L7vy_GXTyja6w4eerwakXXpqdk7fmM5KtY69UJTf4WZeVDyTDkHN_W-szjgJAmo5y9G357Tb8aIiJAuCJHmeg0pPfFJyt4B37v7zpvZKb0nyC8EdkVXcmvnNEYAb65eBWa8ikpGk0OvHnkbu9FkHWGgxl_2XQHUH7wuH9tPDJYaNalWiPppG04uBw9ya6BeC-vHOwtSLEdmvM1GfHeej2bCH3cuMZrJlcKQvXccfFFSME3lEVo-c19YWxGU9cH-YpIRlDD6GUSTwMLUTNNpuB1ZjdSCrfxhRr98ETPYeGkSofqhWWSR9Cow_1OKF_PEPBHWWy7cJ6za6MbHqkOYEY48MrCp199bglDumCdvVyoLgQa1eFjKnXgTlYwFPub7TogSdVq17GN25abG4a0pVVxujer6HOWm6_cRca0qzIo39NfPZfPipcwy03x5cf-Zi4jLjIEUApw1rsXQs8T7Koa0AhFPTl4n-NPc8FIsR0o8vGisuwwegalua2KIm-qkC8LPOkBFLgOmb5W_Dn722AS8iYvcLefBtFPFMakRuThB1qKogppzm3z9RkD5oV90fAG4Q2hzX9OfIcfaT9VIf8pon-gKbuJijv97IiKf8KG0PmFXBjJpVGn3vx8m7nVYGO0hU54EGTnx79bd_37HtazSgGw5-W1_07otGdTQPok6SAGvpef2rT7yc6KtLzP5UdC4SpEOhyfEGhXB-wtD3aW6-gYBgx9DEoikI461UgDNbNlP6DnitzV7l3VpTlmw27LFwTldmbE1xGilSrkshUhcBEKqUmbvCLR8wI7AhywDTuVaFU0lnnNPVtE7vOjlSW7rwkqsrydGHqCeTsFrWVsiUx3iNy_57tOT-Y1WMlFVTuoRSa5pg9XRbm_7xPSbsToJnM68RwsL0JXcMJ6RUJDu3lz-iDq9KxGjYKs1ryEuQwfQeR_kL2dRR5H1sTE-tcCuT6lSENfE-C2bnoKj6smJt3rKAy7LH4q1OxaZDXiTdUX4AM4sP-rfuImkX5nnGm1OhqBqC9FbzLTeCjk-c6f-Bjy5ZGQuu5auUxiPdyTx_yVItEL_KeqEYwdCZJe5T6lT7FcUnDUZ4icij_YK_5zDsg0OZ6tFwfffHL7jcFDCs3fauOF9GpEdnSCPw4tcFdG5YB--uNMVue87LbTr3xpM4KZP0by3gDT1O0-KAmsGMR5PW7A5zRztuybnA9giWk8LyyYKPMswORwoAUd1TdsG1KiP7YpiNXidfAwDxa9762XYebBNkYaSQ2EpTF469j3GW1nO5cQJ21cBlqRL667EO6mKPMkh3sjYhgcEaZhX09Uc3D0tSo9Zfg1qibun19uJjHxFi9QULvQmSniVCcM4j00Qish0wZSJoaB5lrtLUpsKBiV3FI6VnqnhjFI52o0MfUI2JcZwKSmQdw1pRgpDtXt4a19sqkjIsSa2wm01MG5biALl67z6FDb3yRSFI4Ijk7B4iLu8meOtEVmWKEHTlcEsftj2SVz_gXc-OfkoeM3b6v6iRvsdZvZcX_85jjCksgZwMwEd14GObJ8cQsERFcMTK6b5UOn6bo2CFxgaX52NdA4nvS39FukiB-on-0WDDH8Fe28NQVLRS5NPxfnuEp7UMI6-vC6VchQpyT0ydHVPQ_my3ZG2rOGEpKXR_53JWRtL_mUEYlXgbs-ZVep1WWfzJqo0l4Fy9aBKX11VOvEFByTY1Di2wvkGUNO_08FtVzYPwUic-q9cCFt95xGwwqcthEr9r268pjJNraIwesY6exoPDA49dJZ5Rn9tdAU7Ssgv-4davpS2RzS53tdADk11Vr6Ul3tTgIrlFz-082JV8ZFmMnVFmFJ72VO22-7I2u7M8frqF04XRpr4oFQNbHxrR4e1_EBJNDRKwrruXNw-iEKwJm4L2QT8AwPLuqG6M-A6T2QGyUr6z36r4StLbEkwqupw4l3hpD9bUuSXAA8YxMYSCk_rt3WGLhBhAQUO8saU7pfh4fsjshtsqM1b__uN1t-xYe-zLkIZklfmXZuyyslLx7DKTcViulJFEtaZQOfmYRcedkaebhR1GOEPQiJW86D76kDVeO5ycKBJwG92TeQHaOqNymuwIpKxSgwiw2Ngm_SRyI6EO0ZcJU3fIJbeBZ5A7lgNSqooqobOPSPx4PrSuhq4m7pFvhm6NprtraPLC2pk3cHWJ_HDTTubsHxssHn3Zg3mk10RTUKpoP9Ik7WR9hm0aB776jSdb5QdQ3GqtXHVx-iAatjNWkzAnueRRxPMI4keJWOx5izf4H00q8YHwcppYLPE1sbBYHtT5n3Kd5MQwlTbmUJWap-RQsX3cr7nRpPgovFY0MB5kscMJcBRcYVq5DefI1ZPOkp4k9RGKZYy-VK5H3VVB2nqrga7BDfVq_iKb5bVbzKsOi4rpj0V01pbT4wMO2tKuRiN1F1oOQfRYXF5l_Qe4K0dfnA_EtrZu6NA4OgQAHYD9g==",
+        "summary": []
+      },
+      {
+        "id": "msg_0489483530bbba13006aacabe3e50087d099f949cd2d3fcd6c",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D02: I could not find a reliable source."
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1621,
+      "input_tokens_details": {
+        "cache_write_tokens": 1618,
+        "cached_tokens": 0
+      },
+      "output_tokens": 257,
+      "output_tokens_details": {
+        "reasoning_tokens": 239
+      },
+      "total_tokens": 1878
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3571.77,
+  "raw_response": {
+    "id": "resp_0391a19b42828fd9006aacabfb997887d0980f629340dc08a6",
+    "object": "response",
+    "created_at": 1789701115,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701118,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_0391a19b42828fd9006aacabfc0c6087d087231760db939064",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrKv-N-_bQwFh2qZiv4v5HfXYIgcteilsfEI7-dbpITnh7EjG5DeQeuhTdEUuJ3JnSONNGZmbgmOzMoAe3r4ZAnxkMNXAeC2C_NwSrP-f4YI0I7uXdJJK4UG-6tqP3E6-5BRjSdb8hhzwN5kEXoctuuVjZqUbZWietAVaQmWRjQhaFPCT9S0PwY5namH608KkfkxftVh8LwLEIHQgJdS7c3xRvJFw1MBEjp1o1_OXU_fwtHk1QlL4A3SfQpzLE6KnLp2ln_XerRHskzcDHC1UaO450PgiXEo74r_OfmrjiUGwKp6iwxkaeEARB10EnVxsBr8se4VTQZr4jLqmiIX0j-2tSw5QyWrUvzPVfP2KSWjJ7IUUw-U9N5P8FM9U2npN9n3PKAoOxIR4891TL4mC-TkVLUhWfuJqNwTLgA5yJ7DdwtjWQ66U5dQ4nP70EApePZTy2Coi9uEW_VaOVo04OhRwK8cl7kuOhb1C4w5pS4RNtZGtvs9hXde_bxQ2cvkzR5l_zoC2iRDSRAki650ld-VIPvTRzhYzLry9o5MjJOsGA0v9dQPQshQhG6Jm7aTm6mG_LLuQQLhzx9HYoQXuvrHmOyFLMVrIDF_lhw0GwAX-7ndVHqFLkt-NDvXR0gToeqkE5j3efyoUTmFEQ_ak-S2Lzp3Rq7x8toOUVYnbYnEt05QdnAu48Yclp7oQhJk1WJzQ3XSCztFlfLoYgDqkZZ_qfXCUCPlOFjovhtvpOMPioSWSFyBqN0cCwcRnCh3Ep1rYhzeSlEfOw2gVIR2cEmIoVUjy6__cQgwrhRbcm8LsZtow_NBtp3JqUTkdVpvIj8W32YZgRsceJ9cFmPSG_oH8oBxSG1-iSh7urKT4EffKy09n4fbueewgBmpiiVfvEBG6Xq8tRg8ft8-lXQB28tzD6NcODyNoikQIiEalm-YZAAtpbUKMHAbPd4skenKLBiwwBaCs6Y6D55kmo9__wOJf_2_Z6O1c5LiYMltY7QtwuCNKbI3lVGFULdJOueFT2MV9HgmdOgS9C3vK7aqdiKozAPHGCYAkA9OGGGty90s4WcjIsw7xGDGbLW28IDS30qBtdpZPurwtZ6GTCDrzOLlOjbW6M2X0lhF1yluO2DXYZEqy6rn7BWIlatj52jKfIp6ytWo9YHA8aoEyx3ovdPzdFigFOFdQV0YbyBEnRbOX2-ccdvEGEUJ2eoQ-E-91zdv7NhTNCc-pZ6fwR-Nhy4qN5icsU9iJBSFKpCSrarJUFNGVFna7Ia9UbZ4KuXbAi7j2IGRHmysY_FmZFOwo6aWcttrgWIf-lW6rPYtugoTQVchvWBUKzr1IFphmYYTvD3q86v381dNWXuoSiJQ9pWNUfNv8zMZLV9FkQ-s5MVtW1ixCe0u7DU781RnUGa6sshS2fSn74u7GYeiVdHYKkIj2zajhPoi9wKKm_Z6kshvu0zdggA_TiJhARnnHy0yTQ452ZNq8wo3FgTxYkjUUU2I8ITzP7kNOKHQO8H16P1z-LrS8TgV6f_MQcRIs1hzCdkFSf38Tvy90D_oX0He101xDc7hYiYYuSUXSai-RmgrU-Uur4vmC0NB1qK4zemRtkbbu5FoNoYtqhqmEpZkfrk0gxom3hEGFsPetDS-SprP8wXKgcP9VDE_jO-p85rx-CJib5uitD4h6ypSE1z4sGCkPbZF0OczFK20leLEUYauVaqe7oH1X5ULNGPKmZHecc_i-vdjoFHVMO40gRaxXeLTPtAXK-7fG7OWVsz72YGQFq1XN8OwfpmoOiBwVXOz1bm7u8fNzfS0WrdZktYIMl2Ylxa_dp-Hbs81aDbSDpqR-5LtjZtX7w0a3j7ooRWnAxfNT5SuzVfKPczocoW2xJJd0Aibx8VUUhW8Xb28SmJp0u8YS6n5l5VB6JDTXKFsoe1DLaSTYCa7Md0sKFzay1i_pR25Acm7lY7Q_uGaRdgI-R-2jt9Crbk-Q2aYREguYH1tdGHFamkzHCFTfrEorHscEAkrDimfbswYTL8n1--jfs-ia6aCadvAVnS-FsN8RCQ1a28LAv9pZeErOykLKqjqJKkyHQkuJMuwmvZCxLNJgnuzYD-dR0GdAgKgKWxrZTn2GeoI-PNmKdFdFrHFFWEVHhBrbfGs7JSTE2Xbn9ffoUiQE9QFidMmq1S-URfYC4rYfZQusXN0BaY1m32jjXvu6mvO42UfnXQeDg5R3qJQzzn3aQSxhgwLd-Wtt2rNJrMMjvluFx4w8f--I2Ex68rL9HoSzMf5MQZHCKvu8oVFIO1rmuipmDycWVESNFUenXlnH-WIqc67EiBG-YtFbnUnrDpRZBbwUE-zwR1K76Brc93nAlstJXwwCDkVMA-nwTF6HObgq9sNseQ2YTx-KwFXo9KxDp2MXu6lVAvnWGFnatF4lq9--cXLYFcij6HptMLYLITdfRW0lNXaWvKMDTA81EbclSAvVVHfzsY23AyjYpQKBdRo4Dg8kAkaupP_0wgA-c2kx8h-NGnPO2g8ynlX8HhT1uEAQqpktt_l1uRbb4bnZlnq2rxV-AEUe8hWINlMURSSJLJhs6L1tCcSvrprMnm2I8bDjSGmWG45XqxLfPxfaPSsupEoLi4dpOekD8ESqWR25G5ZhWbc-8nvBecD_iZIPNiwSq3Eygrt3WKoWvrBpfAjV470xCMH70EotJKlupf5DJIuVRHSzwbG6-KXFZ7zBemTwCDeKBvhlksU6BA_9VGRUGnrDgTiQMy_kCODlIpERDyygHglFRjV3cIO-BSfMdS_fO76gSHh32veUF33JBpicRznRrhgUfXxoBcw9aVCGP9mjL6_RCAkATtPU1FDNtx3lqmODGFbNxFu22JCMFBebninxCWnEJMV3VlIl1hA-0Ag8GHp2_eywJQLtr-hkKKaY8QAg8UfNGmUxQp7a1OMIKyDTb8aFrVNO2EdQgTyvsYMvucOR2XVj3cljREsTiXb93ESOLB9339tqGyCw8awsuQx7gvFAeMtX3MEF9Z6BCsSFQ_OJjm6MhKEg1G3SpNdqcvzxy5JrV7QOODW111Q9w_eZSGZBHctwPdUObk6chH5Xv54x7Ixo-imIank0t-pn2Sc7TqixceJX3MgOWXTFCrOQ8uSokK6A3yTOPyKw2lunWkD8rw5zukt59g==",
+        "summary": []
+      },
+      {
+        "id": "msg_0391a19b42828fd9006aacabfe009087d0a4ee86a23d942e45",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D02: I could not find a reliable source explaining how RAG generates citations. [T03-118]"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1778,
+      "input_tokens_details": {
+        "cache_write_tokens": 1775,
+        "cached_tokens": 0
+      },
+      "output_tokens": 337,
+      "output_tokens_details": {
+        "reasoning_tokens": 307
+      },
+      "total_tokens": 2115
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

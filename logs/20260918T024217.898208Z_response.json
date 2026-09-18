@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 5501.54,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Day=D02\nTôi không thể tìm thấy một nguồn đáng tin cậy cung cấp ví dụ cho cách 1, 3 và 4 trong các đoạn trích khóa học đã cho."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1503,
+      "candidatesTokenCount": 41,
+      "totalTokenCount": 2040,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1503
+        }
+      ],
+      "thoughtsTokenCount": 496,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "BKWsatayO_fL1e8PgPjp4Qg"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "elapsed_ms": 3502.07,
+  "raw_response": {
+    "id": "resp_02325c93e305f742006aacabebf9f087d0a9083c818c7a0b45",
+    "object": "response",
+    "created_at": 1789701099,
+    "status": "completed",
+    "background": false,
+    "billing": {
+      "payer": "developer"
+    },
+    "completed_at": 1789701102,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-luna",
+    "moderation": null,
+    "output": [
+      {
+        "id": "rs_02325c93e305f742006aacabec4ecc87d091ea5719384bf3a3",
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqrKvuJN5zYjPbmFGqUYQxnZIQmoMOu6adlu_kh4Vbce-jRcjUyrvgjU-pgrXxs9GxkUkETIVb3WhoQQ4aR_KW9c3zFixiFTKB2r4c0YygI3NAcuu_-JnCu4QoiapU5ElYHGbv52A2VdeTAEjaix2HCHOXFRwCy5pv0Et4G0-toZtM139r4H8meYyGzzbaBPEtJ5aMO-V4Q2HBhXzXPaVTerRnI64VxVw9Fw7Q4s3oQbSokPoXSy8zCXaDbMu_mX0BevjDD_jj903glIcddQSG85BDAeOpsZnD8ORCFeglx1N3PC3FtoEvWoVza7F7_B17U3hv286RUwzMkUxZnYHsWj8M3UckSuyp44gfOCCzMaVbgJTRDiPjbLswBI2CClxZvWh4xVJwFv8AFNezaRN0uVJiDKeqSkvt2Ec6Pz-W8CzN6fKr_nWKF1EtwJ-n5MOnD-bglCtbUW9KUfra6h0WVWZHufCfZ43cB031FKDG2gww30H3j184C3cAyc94xPA8_XF1BeamvFNCfxCN4PjJwFNy37y_lggYqbyU_wiF5nUOzPZitM0SIjHvUBjrNY2Ce4s8cHr2EjyFHRE1b6UrbJF28rPL6hFC-h79s2wbv3vna_esrvh9VnuUZD4_EN93s3HGxvHr9LvEX_R6B5lz1mQAxNantxyoPpn34MmlRMfD9k4fiqeZNjGJh-Z5K0jbzk6S4Oy2ZzhVkJzYHdxgPzVtMXAcDiuWUbGTGJoi6ZCfVLL5lpn9yxepKfE2CWQLYqP9Mcmzb4tmEs85g8aJuhJj-k20RCQdVL8XMt5dtrb8S66b0rGuo7Hx8zOSoNDAWLv7apmutkJ_jX4gbU80n3cZhYd88qf0R6fQoub_6uiV7dSDsMAMUYjzPa60Wkij1C-Rp9oi9vGktEYKl7EJs-qLyZd1CGAJDlw37nOsL8dcaryvKlKvlQ0l5zevcXShyyISBz0t71qUHcVIBWXkNAB-X_Mm-LD_HdtD_rKEFd2a3zMeXJD4DCYuRjf9TydCscPs3ScWwDpHD4RWUohcLm1l9_gw-reHymgFbqHswptiu5OGLv6IM6JrHullCQFaLFjuZYJ6uWA2WXo985NWHC4EoV2a8hDb9ItGVZIIWUQEfDJeaj1VUTeBg8y38rbtGSaXO7A4ieVO-m14OZioSxHQE_vXzG95Sdcpt1BnoCc7s2xeVfbn1_oh98aOJ8SXhqNg9AppJSWwZeNtCLQUvLCBV0ycGHYdOsaFE9AVl7WgSBwaty3jaDPhQIpo0VHZ6C9kkPJvg6h58pDeSYgaDxrkTi09AEygxljkMS-a5O9obra9Yk_GB2UPsdoxRtPcnIIDdx4ICvOIpej8cT_YeHT54RBF2OauXLbYSs2zm2SnuLvRWkbmwXmWN6-frE-UVCSzg8n0WjKJrDHNfNdIzP4h3q6aNSL1i9ipjz3QeTy6mg6Xmje8E9DH2WliVVznsM36dXOAQOYt7qH-utFeuMXqyVtmcRUSQBGJfYEdtYfyCSPME6WDYx5j4WWyaeBqc80TCG8TTzkV7fq_UcA3ha_yj2S-IXDZfUBxjadCTKD-NQzD5uIvzEzGeIF5IDc4eisI5Hexl05Dv7xqvKx69zpzwrBeCuF4kkSfKXvHw7c5FR9AbGp8qVgDFu38bOCHIU0kZwmtFIMuCYddtMUZnVP3uQwzsqFHr_oAfAayoKGOi4s9B0EmW1NxxaiX-f7Oc4Pxlo_67_g5tewumucL8Uogoeax_BeH3ByWOBHbEZN9haRTX3bERHek5VlSI6iS2_IBXn3xFnSlRVNtt3yYRnvqdkwplh6Vy99nXlnVwbKFhC9GzYXvqqs5IVOvPUXk304zJmODOh8qis2JjDppZvAtS-Mc3Rw5QlVWCJnWLr_CU07jlIF8rkNp2kZe87sUAadLbAUYKHE9dKl4O_2optFimEmKdfwK8Rtw_cRRWFyRiHiZyxQ3v4BkJ3I403zU3w8RmlgBMlahUd7OKx-hzeNt8Gr4OLjD5TzsXS35rs7i_DP-lXt_1izLKQPhyFOWaA0HNFTMyTNA24YuugJEOUvA21h-lrfgI5Jx0YE1Trnq6cRzQncqV6yl0ldTrxH39ya92xWNtmQHl2GVwUBg1fKArSO-rmAgQlNKCZR3i0o_yeVEJlYGgE_IYuR9rxipa4gm1O0vaOKZAGBK4ELvtwB-TN-IFKR4Y1UPWxI6yYwjl4EsbJhyxAZvhzIyiUNgjLhcQYtvI3i8OtTU2azrzUIY55wYwiD0P1I-R10a49sgJWGP3GGf9Uxbl3WWy59evSvhagioACfwzDDPQv7O3IdDdWbnvldaNWV-QBp3bQkGobDRy25XtBLQdZSiTbPTKayEbLNaV-SbBJBAoY-SrPT610_tB3jyu9vEFJ18ZhtN_NOI8VIJOY8_VhzAd11aaOWpRSGmEWF6OLbrS9ddt_6RvSdVunb6RG46VDZpG2MqjjGpv_QmJzdLoKDB7gQKJD-jN5C9V-3g6MsDIvDPlLY7c9Q4wANzrGTMcINaz6os4lQRsFCuEWot-AtgehrM5V5i-2wb2OdA8O29RsNsVC-xdqYpGtbsiH625rgCFT4Nqx0d_N3_FOHND8WrChMESTXZfqXsOuYDyTQODcKcLQDYhp7ZTH3lT1iOgFGacHu8ij2h0nwyENfD7-kKEsaRIcJoUpz_IBR5KHWIrzMsinm_KUS83KMNqy-5keaZGEnbz9omXH7YFqgMe6OT_fwgrkigFuRtlzxKnAvi1Cv8Z1WHwlurFGhc7K3xNAi_FkcRwK8EJKjCWC1f5CTnNaa8xmyr",
+        "summary": []
+      },
+      {
+        "id": "msg_02325c93e305f742006aacabee304487d08763b5699d90ca5b",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "Day D02: Tôi không tìm thấy nguồn đáng tin cậy trong các trích đoạn được cung cấp để giải thích tại sao `import OpenAI` được đặt bên trong thân hàm."
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1737,
+      "input_tokens_details": {
+        "cache_write_tokens": 1734,
+        "cached_tokens": 0
+      },
+      "output_tokens": 298,
+      "output_tokens_details": {
+        "reasoning_tokens": 253
+      },
+      "total_tokens": 2035
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

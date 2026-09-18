@@ -1,0 +1,36 @@
+{
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "elapsed_ms": 7412.81,
+  "raw_response": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "D01\nTrong các nguồn đã cung cấp, thuật ngữ \"tool calling\" không được định nghĩa cụ thể. Tuy nhiên, các mô hình ngôn ngữ lớn (LLM) để càng ngày càng thông minh và có thể đưa vào đời thật để có tác dụng thì cần phải có \"những lớp công cụ — tool, context, các lớp hệ thống\" bao phủ trên mô hình đấy. Bản thân mô hình bị giới hạn, nên cần phải xây dựng thêm lớp bên ngoài để thực sự hữu ích [T04-091].\n\nTóm lại, các \"công cụ\" này là các lớp bên ngoài được xây dựng trên mô hình cơ bản để khắc phục giới hạn của mô hình, giúp nó trở nên thông minh hơn và có ứng dụng thực tế [T04-091]."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 1669,
+      "candidatesTokenCount": 168,
+      "totalTokenCount": 2840,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 1669
+        }
+      ],
+      "thoughtsTokenCount": 1003,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "responseId": "-aSsatnPFuPf1e8PoKTz6Qc"
+  }
+}
