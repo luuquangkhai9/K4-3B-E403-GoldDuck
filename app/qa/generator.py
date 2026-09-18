@@ -14,11 +14,18 @@ class AnswerGenerator:
         model: str | None = None,
         client: Any = None,
         timeout: float = 30.0,
+        temperature: float = 0.0,
     ) -> None:
         self.api_key = api_key if api_key is not None else os.getenv("OPENAI_API_KEY", "")
         self.model = model or os.getenv("LLM_MODEL") or "gpt-5.6"
         self.client = client
         self.timeout = timeout
+        # Every call here is extraction/classification under strict grounding
+        # rules (cite real evidence, pick among real indices), never open-ended
+        # writing — there's no upside to sampling randomness, only inconsistent
+        # answers/mindmaps for the same input. Keep this at 0 unless a specific
+        # call needs otherwise.
+        self.temperature = temperature
 
     @property
     def available(self) -> bool:
@@ -38,6 +45,7 @@ class AnswerGenerator:
             instructions=instructions if instructions is not None else SYSTEM_PROMPT,
             input=prompt,
             max_output_tokens=2000,
+            temperature=self.temperature,
             store=False,
         )
         if getattr(response, "status", "completed") != "completed":

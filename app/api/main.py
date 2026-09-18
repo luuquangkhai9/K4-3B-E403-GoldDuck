@@ -69,15 +69,24 @@ def days():
 
 @app.get("/api/mindmap")
 def mindmap(day: str):
-    retrieval, qa = get_services()
-    if day not in retrieval.available_scopes:
-        raise HTTPException(404, "Không tìm thấy buổi học này.")
-    # Let the LLM group the day's real, already-extracted headings into topic
-    # branches when available (it only ever picks among them, never invents
-    # one) — falls back to the rule-based/embedding grouping otherwise.
-    nodes = retrieval.mindmap_nodes(day)
-    organized = qa.organize_mindmap(day, nodes) if nodes else None
-    return {"day": day, "branches": organized} if organized else retrieval.mindmap(day)
+    try:
+        retrieval, qa = get_services()
+        if day not in retrieval.available_scopes:
+            raise HTTPException(404, "Không tìm thấy buổi học này.")
+        # Let the LLM group the day's real, already-extracted headings into
+        # topic branches when available (it only ever picks among them, never
+        # invents one) — falls back to the rule-based/embedding grouping
+        # otherwise.
+        nodes = retrieval.mindmap_nodes(day)
+        organized = qa.organize_mindmap(day, nodes) if nodes else None
+        return {"day": day, "branches": organized} if organized else retrieval.mindmap(day)
+    except HTTPException:
+        raise
+    except FileNotFoundError as exc:
+        raise HTTPException(503, "Chưa có chỉ mục PDF. Hãy chạy python scripts/ingest.py.") from exc
+    except Exception as exc:
+        log.exception("Mindmap generation failed")
+        raise HTTPException(500, "Không tạo được sơ đồ tư duy. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
 
 
 @app.post("/api/mindmap/generate")

@@ -25,10 +25,11 @@ _CODE_FENCE = re.compile(r"^```[a-zA-Z]*\n?|```$")
 _MAX_MINDMAP_BRANCHES = 8
 _MAX_MINDMAP_NODES_PER_BRANCH = 10
 _MAX_ORGANIZE_NODES_PER_BRANCH = 6  # a representative overview, not every slide — see ORGANIZE_SYSTEM_PROMPT
-# Items are short label strings, so even a generous cap is cheap in tokens;
-# a lesson bundling many near-duplicate presenter decks can genuinely have
-# a few hundred deduplicated headings (observed: 379), and silently
-# truncating leaves real content unreachable from the mindmap entirely.
+# Items are short label strings, so even a generous cap is cheap in tokens.
+# A lesson bundling many near-duplicate presenter decks can genuinely have a
+# few hundred deduplicated headings (observed: 379) — this just needs to stay
+# above that so the model sees the whole day's material to pick from, not
+# because every item needs to end up in the output (it won't; see above).
 _MAX_ORGANIZE_NODES = 500
 
 
