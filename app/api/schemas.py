@@ -14,6 +14,16 @@ class AskRequest(BaseModel):
     question: Annotated[str, Field(min_length=1, max_length=4000)]
     day_id: str | None = None
     scope: list[str] | None = Field(default=None, max_length=50)
+    clarification_topic: str | None = Field(default=None, min_length=1, max_length=200)
+
+    @field_validator("clarification_topic")
+    @classmethod
+    def clean_clarification_topic(cls, value):
+        if value is not None:
+            value = value.strip()
+            if not value:
+                raise ValueError("Vui lòng nhập chủ đề cần làm rõ.")
+        return value
 
     @field_validator("day_id", mode="before")
     @classmethod
@@ -106,11 +116,33 @@ class Citation(BaseModel):
         return normalized_bbox(value)
 
 
+class Suggestion(BaseModel):
+    id: str
+    label: str
+    query: str
+    sources: list[Citation] = Field(default_factory=list)
+
+
+class ClarificationOption(Suggestion):
+    pass
+
+
+class Clarification(BaseModel):
+    original_query: str
+    question: str
+    scope: list[str] | None = None
+    options: list[ClarificationOption] = Field(default_factory=list)
+
+
 class QAResponse(BaseModel):
     answer: str
+    status: Literal["answered", "abstained", "needs_clarification", "error"] = "answered"
+    message: str = ""
     citations: list[Citation] = Field(default_factory=list)
     grounding: dict[str, Any] | None = None
     debug: dict[str, Any] | None = None
+    suggestions: list[Suggestion] = Field(default_factory=list)
+    clarification: Clarification | None = None
 
 
 class ChatContext(BaseModel):

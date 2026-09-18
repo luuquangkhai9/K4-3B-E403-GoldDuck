@@ -41,7 +41,7 @@ class ChatAgent:
             result = json.loads(re.sub(r"^```\w*\s*|\s*```$", "", text.strip()))
         return contract.model_validate(result)
 
-    def plan(self, question, context=None):
+    def plan(self, question, context=None, clarification_topic=None):
         explicit = extract_explicit_day_scope(question)
         mindmap = bool(_MINDMAP.search(question))
         discovery = is_document_discovery(question)
@@ -51,11 +51,14 @@ class ChatAgent:
         if referenced:
             topic = context.get("topic")
             discovery = context.get("task") == "study_materials"
+        if clarification_topic:
+            topic = clarification_topic
         task = "study_materials" if discovery else "topic_map" if mindmap and topic else "day_summary" if mindmap else "answer"
         fallback = TaskPlan(task=task, output_format="mindmap" if mindmap else "text", topic=topic, scope=explicit)
         # Common document requests and pure day overviews need no extra model
         # roundtrip. Ambiguous mindmap/topic phrasing uses semantic planning.
-        if (not self.generator.available or referenced or (discovery and topic) or
+        if (not self.generator.available or referenced or clarification_topic or (discovery and topic) or
+            (mindmap and not discovery and topic and len(tokenize(topic)) <= 6) or
             (mindmap and explicit and not topic) or (not mindmap and not discovery)):
             return fallback, False
         try:
@@ -81,7 +84,8 @@ class ChatAgent:
             log.warning("Task planning unavailable (%s); using local plan", type(exc).__name__)
             return fallback, True
 
-    def run(self, question, *, scope=None, context=None, validate_scope=None, answer_handler=None):
+    def run(self, question, *, scope=None, context=None, clarification_topic=None,
+            validate_scope=None, answer_handler=None):
         started = time.monotonic()
         explicit = extract_explicit_day_scope(question)
         if explicit:
@@ -89,7 +93,7 @@ class ChatAgent:
                 validate_scope(explicit)
             if scope is not None and any(day not in scope for day in explicit):
                 raise ValueError("Ngày yêu cầu không nằm trong phạm vi đã chọn. Hãy điều chỉnh phạm vi học tập.")
-        plan, planner_fallback = self.plan(question, context)
+        plan, planner_fallback = self.plan(question, context, clarification_topic)
         if plan.scope and plan.scope != explicit:
             if validate_scope:
                 validate_scope(plan.scope)
@@ -126,6 +130,8 @@ class ChatAgent:
         elif plan.task == "topic_map":
             if not topic:
                 base.update(status="needs_clarification", answer="Bạn muốn tạo mindmap về chủ đề nào?")
+            elif self.retrieval.topic_supported(topic, scope=effective_scope) is False:
+                base.update(status="no_evidence", answer=f"Chưa tìm thấy nguồn phù hợp về {topic} trong phạm vi đã chọn.")
             else:
                 retrieved = self.retrieval.retrieve(search_query, top_k=5, scope=effective_scope)
                 result = self.qa.mindmap(topic=topic, evidence=retrieved.get("evidence", []))
@@ -134,14 +140,16 @@ class ChatAgent:
                 if not base["branches"]:
                     base.update(status="no_evidence", answer=f"Chưa tìm được đủ nội dung phù hợp về {topic} để tạo mindmap.")
         else:
+            resolved_question = question + "\nChủ đề người dùng làm rõ: " + clarification_topic if clarification_topic else question
             if answer_handler:
-                result = answer_handler(question, effective_scope)
+                result = answer_handler(resolved_question, effective_scope)
             else:
-                retrieved = self.retrieval.retrieve(question, scope=effective_scope)
-                result = self.qa.answer(question=question, evidence=retrieved.get("evidence", []))
+                retrieved = self.retrieval.retrieve(resolved_question, scope=effective_scope)
+                result = self.qa.answer(question=resolved_question, evidence=retrieved.get("evidence", []))
             if hasattr(result, "model_dump"):
                 result = result.model_dump()
-            base.update({key: value for key, value in result.items() if key != "debug"})
+            base.update({key: value for key, value in result.items() if key not in {"debug", "status"}})
+            base["status"] = {"answered": "completed", "abstained": "no_evidence", "error": "model_unavailable"}.get(result.get("status"), result.get("status", "completed"))
             base["debug"].update(result.get("debug") or {})
             if (result.get("grounding") or {}).get("no_answer"):
                 base["status"] = "no_evidence"
@@ -193,6 +201,10 @@ class ChatAgent:
     def _study(self, question, topic, query, scope, base, reference_ids):
         trace = base["debug"]["agent"]
         tools = LectureTools(self.retrieval, scope=scope)
+        if self.retrieval.topic_supported(topic, scope=scope) is False:
+            base.update(status="no_evidence", answer=f"Chưa tìm thấy nguồn phù hợp về {topic} trong phạm vi đã chọn.")
+            trace["offline_absence_check"] = True
+            return base
         limit = min(12, integer("AGENT_MAX_DOCUMENTS", 8))
         documents = []
         status = "completed"

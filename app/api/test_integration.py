@@ -221,6 +221,10 @@ class DemoIntegrationTests(unittest.TestCase):
         ]
         retrieval = Mock()
         retrieval.retrieve.return_value = {"slides": [], "evidence": evidence}
+        retrieval.subject_terms.return_value = []
+        retrieval.normalize_topic.side_effect = lambda topic: {"topic": topic}
+        retrieval.topic_supported.return_value = True
+        retrieval.concept_suggestions.return_value = []
         with patch("app.api.main.get_services", return_value=(retrieval, app.state.qa_service)):
             response = self.client.post("/api/ask", json={"question": "Repeated text?"})
         self.assertEqual(response.status_code, 200, response.text)
@@ -364,6 +368,10 @@ class V2ContractTests(unittest.TestCase):
                             result["grounding"] = {"status": "insufficient_evidence", "no_answer": True}
                     retrieval, qa = Mock(), Mock()
                     retrieval.retrieve.return_value = retrieved
+                    retrieval.subject_terms.return_value = []
+                    retrieval.normalize_topic.side_effect = lambda topic: {"topic": topic}
+                    retrieval.topic_supported.return_value = True
+                    retrieval.concept_suggestions.return_value = []
                     qa.answer.return_value = result
                     with patch.dict(os.environ, {"TOP_K": "5", **{key: str(enabled).lower() for key in switches}}), \
                          patch("app.api.main.get_services", return_value=(retrieval, qa)), TestClient(app) as client:

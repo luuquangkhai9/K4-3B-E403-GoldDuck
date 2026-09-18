@@ -472,6 +472,12 @@ body {
 }
 .citation-chip:hover { background: #dfedfa; }
 .source-row { margin-top: 4px; }
+.abstention-bubble, .clarification-bubble { border-left: 3px solid #d09a22 !important; }
+.follow-up-label { margin: 14px 0 8px; color: #64748b; font-size: 13px; font-weight: 700; }
+.follow-up-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.follow-up-options .suggestion { margin: 0; padding: 7px 10px; color: #15518e; background: #f5f9fd; }
+.follow-up-options .suggestion:hover { background: #dfedfa; }
+.tutor-error { border-left: 3px solid #c0392b !important; color: #a93226; }
 .typing-dots { display: inline-flex; align-items: center; gap: 4px; padding: 3px 0; }
 .typing-dots span {
   width: 6px; height: 6px; border-radius: 50%; background: #9aa7b6;

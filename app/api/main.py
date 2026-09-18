@@ -117,15 +117,39 @@ def chat(request: ChatRequest):
     with request_deadline(configured_timeout("REQUEST_TIMEOUT_SECONDS", 45)):
         try:
             from app.agent.service import ChatAgent
+            from app.qa.intent import extract_explicit_day_scope
+            from app.qa.policy import QueryPolicy
+            from app.retrieval.query import is_document_discovery
             require_filters(request.day_id, request.scope)
             retrieval, qa = get_services()
             scope = resolve_day_scope(request.day_id, request.scope)
+            explicit = extract_explicit_day_scope(request.question)
+            if explicit:
+                require_filters(scope=explicit)
+                if scope and any(day not in scope for day in explicit):
+                    raise ValueError("Ngày yêu cầu không nằm trong phạm vi đã chọn.")
+            policy = QueryPolicy(retrieval)
+            context = request.context.model_dump() if request.context else None
+            clarification = policy.clarification(request.question, scope=explicit or scope,
+                                                context=context, selected_topic=request.clarification_topic)
+            if clarification:
+                import re
+                mindmap = bool(re.search(r"mindmap|sơ đồ tư duy|so do tu duy", request.question, re.I))
+                task = "study_materials" if is_document_discovery(request.question) else "topic_map" if mindmap else "answer"
+                return ChatResponse(answer=clarification["question"], status="needs_clarification",
+                                    task=task, output_format="mindmap" if mindmap else "text",
+                                    title="Làm rõ chủ đề", clarification=clarification,
+                                    context=context or {"task": task, "topic": None},
+                                    debug={"policy": {"offline": True, "provider_calls": 0}})
             result = ChatAgent(retrieval, qa).run(
                 request.question, scope=scope,
-                context=request.context.model_dump() if request.context else None,
+                context=context, clarification_topic=request.clarification_topic,
                 validate_scope=lambda days: require_filters(scope=days),
                 answer_handler=lambda question, days: process_ask(AskRequest(question=question, scope=days)),
             )
+            if result["status"] == "no_evidence":
+                days = result["debug"]["agent"]["scope_filter"]
+                result["suggestions"] = policy.abstention(request.question, scope=days)["suggestions"]
             return ChatResponse.model_validate(result)
         except HTTPException:
             raise
@@ -143,8 +167,28 @@ def process_ask(request):
         retrieval, qa = get_services()
         top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
         filters = require_filters(request.day_id, request.scope)
-        retrieved = retrieval.retrieve(question=request.question, top_k=top_k, **filters)
-        result = qa.answer(question=request.question, evidence=retrieved.get("evidence", []))
+        from app.qa.policy import QueryPolicy, question_topic
+        scope = resolve_day_scope(request.day_id, request.scope)
+        policy = QueryPolicy(retrieval)
+        clarification = policy.clarification(request.question, scope=scope, selected_topic=request.clarification_topic)
+        if clarification:
+            return QAResponse(answer=clarification["question"], status="needs_clarification",
+                              clarification=clarification, debug={"policy": {"offline": True, "provider_calls": 0}})
+        topic = request.clarification_topic or question_topic(request.question)
+        if topic:
+            normalized = retrieval.normalize_topic(topic)["topic"]
+            if retrieval.topic_supported(normalized, scope=scope) is False:
+                return QAResponse(**policy.abstention(request.question, scope=scope),
+                                  debug={"policy": {"offline": True, "provider_calls": 0}})
+        question = request.question
+        if request.clarification_topic:
+            question += "\nChủ đề người dùng làm rõ: " + request.clarification_topic
+        retrieved = retrieval.retrieve(question=question, top_k=top_k, **filters)
+        if not retrieved.get("evidence"):
+            return QAResponse(**policy.abstention(question, scope=scope), debug=retrieved.get("debug"))
+        result = qa.answer(question=question, evidence=retrieved.get("evidence", []))
+        if not result.get("citations"):
+            return QAResponse(**policy.abstention(question, scope=scope), debug=retrieved.get("debug"))
         # Validate the contract and always create local, correctly encoded source links.
         payload = dict(result)
         if isinstance(retrieved.get("debug"), dict):

@@ -582,12 +582,84 @@ function addAiMessage(answer, citations, scope) {
   if (citations.length) openCitation(citations[0]);
 }
 
-async function send() {
+function addAbstentionMessage(data, scope) {
+  addAiMessage(data.answer || 'Chưa tìm thấy nguồn phù hợp.', [], scope);
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble abstention-bubble';
+  const label = document.createElement('p');
+  label.className = 'follow-up-label';
+  label.textContent = 'Các chủ đề có nguồn bạn có thể xem tiếp (không phải câu trả lời cho câu hỏi trên):';
+  bubble.append(label);
+  const row = document.createElement('div');
+  row.className = 'follow-up-options';
+  for (const suggestion of data.suggestions || []) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'suggestion';
+    button.textContent = suggestion.label;
+    button.addEventListener('click', () => send(suggestion.query, null, scope));
+    row.append(button);
+    for (const source of suggestion.sources || []) {
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'citation-chip';
+      link.textContent = `${source.day_label || 'Chưa xác định Day'} · Slide ${source.page_number}`;
+      link.title = source.filename;
+      link.addEventListener('click', () => openCitation(source));
+      row.append(link);
+    }
+  }
+  bubble.append(row);
+  msg.append(bubble);
+  messages.append(msg);
+  scrollToBottom();
+}
+
+function addClarificationMessage(data, scope) {
+  const clarification = data.clarification;
+  const frozenScope = clarification.scope === undefined ? scope : clarification.scope;
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble clarification-bubble';
+  bubble.textContent = clarification.question;
+  const row = document.createElement('div');
+  row.className = 'follow-up-options';
+  for (const option of clarification.options || []) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'suggestion';
+    button.textContent = option.label;
+    button.addEventListener('click', () => send(clarification.original_query, option.label, frozenScope));
+    row.append(button);
+  }
+  const topic = document.createElement('input');
+  topic.type = 'text';
+  topic.maxLength = 200;
+  topic.placeholder = 'Nhập chủ đề khác…';
+  topic.setAttribute('aria-label', 'Chủ đề cần làm rõ');
+  const submit = document.createElement('button');
+  submit.type = 'button';
+  submit.className = 'suggestion';
+  submit.textContent = 'Làm rõ';
+  const choose = () => { if (topic.value.trim()) send(clarification.original_query, topic.value.trim(), frozenScope); };
+  submit.addEventListener('click', choose);
+  topic.addEventListener('keydown', event => { if (event.key === 'Enter') choose(); });
+  row.append(topic, submit);
+  bubble.append(row);
+  msg.append(bubble);
+  messages.append(msg);
+  scrollToBottom();
+}
+
+async function send(questionOverride = null, clarificationTopic = null, scopeOverride = undefined) {
   if (busy) return;
-  const question = input.value.trim();
+  const question = (typeof questionOverride === 'string' ? questionOverride : input.value).trim();
   if (!question) return;
   busy = true;
-  const scope = selectedScope.length ? [...selectedScope] : null;
+  const scope = scopeOverride !== undefined ? (scopeOverride ? [...scopeOverride] : null) : selectedScope.length ? [...selectedScope] : null;
   removeWelcome();
   addUserMessage(question);
   input.value = '';
@@ -598,18 +670,26 @@ async function send() {
   try {
     onlineStatus.textContent = 'Đang tìm nội dung và kiểm tra nguồn…';
     addTypingIndicator();
+    const body = {question, scope, context: chatContext};
+    if (clarificationTopic) body.clarification_topic = clarificationTopic;
     const {response, data} = await fetchWithTimeout('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, scope, context: chatContext }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Câu hỏi không hợp lệ hoặc máy chủ chưa sẵn sàng.');
     removeTypingIndicator();
-    addAiMessage(data.answer, data.citations || [], scope);
+    if (data.status === 'needs_clarification' && data.clarification) {
+      addClarificationMessage(data, scope);
+    } else if (['no_evidence', 'abstained'].includes(data.status) && data.suggestions?.length) {
+      addAbstentionMessage(data, scope);
+    } else {
+      addAiMessage(data.answer || data.message || '', data.citations || [], scope);
+    }
     if (data.output_format === 'mindmap' && data.branches?.length) {
       addMindmapMessage(data.title || 'Sơ đồ tư duy', data.branches);
     }
-    if (data.context?.topic && ['completed', 'partial'].includes(data.status)) {
+    if (data.context && ['completed', 'partial'].includes(data.status)) {
       chatContext = data.context;
     }
   } catch (error) {
@@ -624,7 +704,7 @@ async function send() {
   }
 }
 
-sendButton.addEventListener('click', send);
+sendButton.addEventListener('click', () => send());
 input.addEventListener('keydown', event => { if (event.key === 'Enter') send(); });
 document.querySelectorAll('.suggestion[data-ask]').forEach(button => {
   button.addEventListener('click', () => { if (!busy) { input.value = button.dataset.ask; send(); } });

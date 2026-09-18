@@ -189,6 +189,48 @@ async function main() {
   assert.equal(failed.elements.get('messages').querySelectorAll('*').some(element => element.className === 'mindmap-tree'), false);
   assert.equal(failed.run('busy'), false); checks++;
 
+  const clarify = await setup(async () => ({data: {status: 'needs_clarification', clarification: {
+    question: 'Chọn chủ đề', original_query: 'tạo mindmap các tài liệu về cái này', scope: ['Day01'],
+    options: [{label: 'Transformer', query: 'Transformer', sources: []}],
+  }}}));
+  clarify.run("selectedScope = ['Day01']; input.value = 'tạo mindmap các tài liệu về cái này';");
+  await clarify.run('send()');
+  clarify.run("selectedScope = ['Day07'];");
+  let choices = clarify.elements.get('messages').querySelectorAll('*');
+  choices.find(element => element.textContent === 'Transformer').listeners.click();
+  await tick();
+  let last = clarify.calls.filter(call => call.url === '/api/chat').at(-1).body;
+  assert.equal(last.question, 'tạo mindmap các tài liệu về cái này');
+  assert.equal(last.clarification_topic, 'Transformer');
+  assert.deepEqual(last.scope, ['Day01']); checks++;
+
+  choices = clarify.elements.get('messages').querySelectorAll('*');
+  choices.find(element => element.placeholder === 'Nhập chủ đề khác…').value = 'CNN';
+  choices.find(element => element.textContent === 'Làm rõ').listeners.click();
+  await tick();
+  last = clarify.calls.filter(call => call.url === '/api/chat').at(-1).body;
+  assert.equal(last.clarification_topic, 'CNN');
+  assert.equal(last.question, 'tạo mindmap các tài liệu về cái này'); checks++;
+
+  const abstain = await setup(async () => ({data: {status: 'no_evidence', suggestions: [
+    {label: '<script>topic</script>', query: 'CNN', sources: []},
+  ]}}));
+  abstain.run("input.value = 'UnknownTopic987654 là gì?';");
+  await abstain.run('send()');
+  const suggestion = abstain.elements.get('messages').querySelectorAll('*').find(element => element.className === 'suggestion');
+  assert.equal(suggestion.textContent, '<script>topic</script>');
+  assert.equal(suggestion.html, undefined);
+  suggestion.listeners.click();
+  await tick();
+  assert.equal(abstain.calls.filter(call => call.url === '/api/chat').at(-1).body.question, 'CNN'); checks++;
+
+  const click = await setup(async () => ({data: {context: {task: 'answer', topic: null}}}));
+  click.run("chatContext = {task: 'study_materials', topic: 'Transformer'}; input.value = 'CNN là gì?';");
+  click.elements.get('send').listeners.click({type: 'click'});
+  await tick();
+  assert.equal(click.calls.filter(call => call.url === '/api/chat').at(-1).body.question, 'CNN là gì?');
+  assert.equal(click.run('chatContext.topic'), null); checks++;
+
   console.log(`UI regression checks passed: ${checks}`);
 }
 

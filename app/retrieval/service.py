@@ -349,6 +349,76 @@ class RetrievalService:
             normalized, aliases, corrections = normalize_topic(topic, self.lexical.document_frequency)
             return {"topic": normalized, "aliases": aliases, "corrections": corrections}
 
+    def topic_supported(self, topic, *, scope=None):
+        """A conservative offline absence check, not a semantic relevance score."""
+        days = resolve_day_scope(scope=scope)
+        with bounded_lock(self._lock):
+            self._load()
+            terms = set(tokenize(topic))
+            if not terms:
+                return False
+            texts = [retrieval_text(slide) for slide in self.slides
+                     if days is None or slide["day_id"] in days]
+            if re.fullmatch(r"[A-Za-z]+-[A-Za-z]+", topic.strip()):
+                phrase = re.escape(topic.strip()).replace(r"\-", r"[\s-]+")
+                return any(re.search(rf"(?<!\w){phrase}(?!\w)", text, re.I) for text in texts)
+            if terms & {"transformer", "transformers"}:
+                terms |= {"transformer", "transformers"}
+            if any(terms & set(tokenize(text)) for text in texts):
+                return True
+            if re.fullmatch(r"[A-Za-z0-9_]{8,}", topic.strip()) and re.search(r"\d", topic):
+                return False
+            # A translation/synonym can have no lexical overlap. Leave that
+            # case to semantic retrieval rather than equating overlap with truth.
+            return None
+
+    def subject_terms(self, question, *, scope=None):
+        days = resolve_day_scope(scope=scope)
+        with bounded_lock(self._lock):
+            self._load()
+            vocab = (self.lexical.document_frequency if days is None else
+                     BM25Index([retrieval_text(slide) for slide in self.slides if slide["day_id"] in days]).document_frequency)
+            return [word for word in tokenize(question) if word in vocab]
+
+    def concept_suggestions(self, question, *, scope=None, limit=3):
+        """Local lexical/header suggestions with real source links; no API calls."""
+        days = resolve_day_scope(scope=scope)
+        with bounded_lock(self._lock):
+            self._load()
+            slides = [slide for slide in self.slides if days is None or slide["day_id"] in days]
+            lexical = self.lexical if days is None else BM25Index([retrieval_text(slide) for slide in slides])
+            ranked = [slides[index] for index, _ in lexical.search(question, 30)]
+            # If the query has no lexical match, these are available topics,
+            # not alleged answers or allegedly nearest semantic neighbors.
+            candidates = ranked or slides
+            suggestions = []
+            seen = set()
+            for slide in candidates:
+                heading = _heading_for_slide(slide)
+                if not heading:
+                    continue
+                label, bbox = heading
+                key = " ".join(tokenize(label))
+                if not key or key in seen or any(marker in label.casefold() for marker in _META_MARKERS):
+                    continue
+                if label.casefold() in {"vinuni", "welcome", "giảng viên", "aicb"}:
+                    continue
+                seen.add(key)
+                evidence_id = f"S{len(suggestions) + 1}"
+                parameters = {"file": slide["filename"], "page": slide["page_number"], "evidence": evidence_id}
+                if bbox is not None:
+                    parameters["bbox"] = ",".join(map(str, bbox))
+                source = {"evidence_id": evidence_id, "slide_id": slide["slide_id"],
+                          "document_id": slide["document_id"], "filename": slide["filename"],
+                          "page_number": slide["page_number"], **record_day_metadata(slide),
+                          "quote": label.removesuffix("…"), "bbox": bbox,
+                          "viewer_url": "/viewer?" + urlencode(parameters), "evidence_type": "native"}
+                suggestions.append({"id": slide["slide_id"], "label": label,
+                                    "query": label, "sources": [source]})
+                if len(suggestions) >= min(3, max(1, limit)):
+                    break
+            return suggestions
+
     def retrieve(self, question: str, top_k: int = 5, *, day_id=None, scope=None,
                  document_discovery=None, evidence_top_k=None) -> dict:
         if not isinstance(question, str):
