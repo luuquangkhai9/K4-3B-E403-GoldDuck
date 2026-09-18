@@ -24,7 +24,7 @@ class AnswerGenerator:
     def available(self) -> bool:
         return self.client is not None or bool(self.api_key.strip())
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, *, instructions: str | None = None) -> str:
         if not self.available:
             return ""
         if self.client is None:
@@ -35,7 +35,7 @@ class AnswerGenerator:
             )
         response = self.client.responses.create(
             model=self.model,
-            instructions=SYSTEM_PROMPT,
+            instructions=instructions if instructions is not None else SYSTEM_PROMPT,
             input=prompt,
             max_output_tokens=2000,
             store=False,

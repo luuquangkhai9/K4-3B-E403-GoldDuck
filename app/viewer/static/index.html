@@ -31,14 +31,6 @@
 </header>
 
 <main class="page">
-  <div class="title-row">
-    <div>
-      <h1>Trợ giảng AI <span style="font-size:30px">👋</span></h1>
-      <div class="subtitle">Hỏi đáp và học cùng AI dựa trên nội dung khóa học của bạn.</div>
-    </div>
-    <button type="button" class="course-btn">Vào khóa học</button>
-  </div>
-
   <section class="ai-layout">
 
     <!-- SIDEBAR -->
@@ -55,6 +47,7 @@
     <!-- CHATBOT -->
     <section class="card chat">
       <div class="chat-head">
+        <button type="button" class="scope-toggle" id="scope-toggle" title="Ẩn/hiện phạm vi học tập" aria-label="Ẩn/hiện phạm vi học tập">☰</button>
         <div class="ai-avatar">🤖</div>
         <div>
           <h2>Trợ giảng AI</h2>
@@ -75,6 +68,7 @@
             <button type="button" class="suggestion" data-ask="Prototype là gì?">Prototype là gì?</button>
             <button type="button" class="suggestion" data-ask="Tool calling là gì?">Tool calling là gì?</button>
             <button type="button" class="suggestion" data-ask="Cho tôi một ví dụ dễ hiểu">Cho tôi một ví dụ</button>
+            <button type="button" class="suggestion" data-ask="Tạo mindmap buổi 3">🧠 Tạo mindmap buổi 3</button>
           </div>
         </div>
       </div>
@@ -116,6 +110,20 @@
 
   </section>
 </main>
+
+<div class="mindmap-overlay" id="mindmap-overlay" hidden>
+  <div class="mindmap-panel">
+    <div class="mindmap-head">
+      <div>
+        <h3 id="mindmap-title">Sơ đồ tư duy</h3>
+        <div class="mindmap-feedback" id="mindmap-feedback" hidden></div>
+      </div>
+      <button type="button" class="mindmap-close" id="mindmap-close" aria-label="Đóng sơ đồ tư duy">✕</button>
+    </div>
+    <div class="mindmap-body" id="mindmap-body"></div>
+  </div>
+</div>
+
 <script src="/static/app.js" defer></script>
 </body>
 </html>

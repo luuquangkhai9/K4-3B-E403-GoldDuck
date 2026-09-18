@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.schemas import AskRequest, QAResponse
+from app.api.schemas import AskRequest, MindmapRequest, QAResponse
 from app.viewer.evidence import normalized_bbox, resolve_pdf, viewer_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -61,10 +61,39 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/api/lessons")
-def lessons():
+@app.get("/api/days")
+def days():
     retrieval, _ = get_services()
-    return {"lessons": retrieval.available_scopes}
+    return {"days": retrieval.available_scopes}
+
+
+@app.get("/api/mindmap")
+def mindmap(day: str):
+    retrieval, qa = get_services()
+    if day not in retrieval.available_scopes:
+        raise HTTPException(404, "Không tìm thấy buổi học này.")
+    # Let the LLM group the day's real, already-extracted headings into topic
+    # branches when available (it only ever picks among them, never invents
+    # one) — falls back to the rule-based/embedding grouping otherwise.
+    nodes = retrieval.mindmap_nodes(day)
+    organized = qa.organize_mindmap(day, nodes) if nodes else None
+    return {"day": day, "branches": organized} if organized else retrieval.mindmap(day)
+
+
+@app.post("/api/mindmap/generate")
+def generate_mindmap(request: MindmapRequest):
+    try:
+        retrieval, qa = get_services()
+        top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
+        retrieved = retrieval.retrieve(question=request.topic, top_k=top_k, scope=request.scope)
+        return qa.mindmap(topic=request.topic, evidence=retrieved.get("evidence", []))
+    except HTTPException:
+        raise
+    except FileNotFoundError as exc:
+        raise HTTPException(503, "Chưa có chỉ mục PDF. Hãy chạy python scripts/ingest.py.") from exc
+    except Exception as exc:
+        log.exception("Mindmap generation failed")
+        raise HTTPException(500, "Không tạo được sơ đồ tư duy. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
 
 
 @app.post("/api/ask", response_model=QAResponse)

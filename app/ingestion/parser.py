@@ -15,6 +15,9 @@ def parse_pdf(path: str | Path, *, filename: str | None = None) -> tuple[Documen
     path = Path(path)
     source_name = filename if filename is not None else path.name
     document_id = "doc_" + hashlib.sha256(source_name.encode("utf-8")).hexdigest()[:16]
+    # PDFs are organized one folder per day (e.g. "Day03/lecture.pdf"); a
+    # file placed directly under the PDF root belongs to no day.
+    day = source_name.split("/", 1)[0] if "/" in source_name else None
     slides: list[SlideRecord] = []
     with fitz.open(path) as pdf:
         if pdf.needs_pass:
@@ -25,6 +28,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None) -> tuple[Documen
             "title": (pdf.metadata or {}).get("title") or path.stem,
             "path": path.as_posix(),
             "total_pages": len(pdf),
+            "day": day,
         }
         for page_index, page in enumerate(pdf):
             width, height = float(page.rect.width), float(page.rect.height)
@@ -52,6 +56,7 @@ def parse_pdf(path: str | Path, *, filename: str | None = None) -> tuple[Documen
                 "slide_id": slide_id,
                 "document_id": document_id,
                 "filename": source_name,
+                "day": day,
                 "page_index": page_index,
                 "page_number": page_index + 1,
                 "text": page.get_text("text", sort=True).strip(),

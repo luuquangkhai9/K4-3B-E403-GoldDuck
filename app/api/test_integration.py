@@ -1,5 +1,6 @@
 """Exercise real ingestion -> lexical retrieval -> extractive QA -> source routes."""
 
+import json
 import os
 from pathlib import Path
 import socket
@@ -110,6 +111,45 @@ class DemoIntegrationTests(unittest.TestCase):
     def test_question_validation(self):
         for payload in ({"question": "   "}, {}, {"question": "x" * 4001}):
             self.assertEqual(self.client.post("/api/ask", json=payload).status_code, 422)
+
+    def test_mindmap_prefers_ai_organized_branches_when_available(self):
+        root = Path(self.temporary.name)
+        day_pdf_dir = root / "day_pdf" / "Day01"
+        day_pdf_dir.mkdir(parents=True)
+        with pymupdf.open() as document:
+            for text in ("Retrieval cơ bản", "Generation với LLM"):
+                page = document.new_page(width=600, height=400)
+                page.insert_text((40, 80), text, fontsize=12)
+            document.save(day_pdf_dir / "lecture.pdf")
+        day_index_dir = root / "day_index"
+        ingest_pdfs(day_pdf_dir.parent, day_index_dir / "slides.json")
+
+        class FakeOrganizeGenerator:
+            available = True
+
+            def generate(self, prompt, *, instructions=None):
+                return json.dumps({"branches": [{"label": "Kiến trúc RAG", "indices": [0, 1]}]})
+
+        app.state.retrieval_service = RetrievalService(index_dir=day_index_dir, dense_enabled=False)
+        app.state.qa_service = QAService(generator=FakeOrganizeGenerator())
+        response = self.client.get("/api/mindmap", params={"day": "Day01"})
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["day"], "Day01")
+        self.assertEqual([b["label"] for b in result["branches"]], ["Kiến trúc RAG"])
+        self.assertEqual(len(result["branches"][0]["nodes"]), 2)
+
+    def test_generate_mindmap_without_model_uses_extractive_evidence(self):
+        for payload in ({"topic": "   "}, {}, {"topic": "x" * 201}):
+            self.assertEqual(self.client.post("/api/mindmap/generate", json=payload).status_code, 422)
+        response = self.client.post("/api/mindmap/generate", json={"topic": "Gradient descent"})
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["title"], "Gradient descent")
+        self.assertEqual(len(result["branches"]), 1)
+        node = result["branches"][0]["nodes"][0]
+        self.assertEqual(node["filename"], self.filename)
+        self.assertEqual(node["page_number"], 1)
 
     def test_missing_or_invalid_sources(self):
         for filename in ("../outside.pdf", str(self.pdf_dir / self.filename), "../README.md"):

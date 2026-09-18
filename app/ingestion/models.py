@@ -9,6 +9,7 @@ class Document(TypedDict):
     title: str
     path: str
     total_pages: int
+    day: str | None
 
 
 class TextBlock(TypedDict):
@@ -21,6 +22,7 @@ class SlideRecord(TypedDict):
     slide_id: str
     document_id: str
     filename: str
+    day: str | None
     page_index: int
     page_number: int
     text: str

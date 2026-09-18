@@ -11,7 +11,19 @@ import numpy as np
 
 from .dense import DenseIndex
 from .fusion import reciprocal_rank_fusion
-from .service import RetrievalService
+from .service import RetrievalService, _group_into_branches
+
+
+class FakeDense:
+    """Minimal stand-in for DenseIndex.search, keyed by branch label instead of embeddings."""
+
+    def __init__(self, slides, scores_by_label):
+        self.slides = slides
+        self.scores_by_label = scores_by_label
+
+    def search(self, label, limit):
+        scores = self.scores_by_label.get(label, {})
+        return [(index, scores.get(slide["slide_id"], 0.0)) for index, slide in enumerate(self.slides)]
 
 
 def slide(index, text):
@@ -81,6 +93,145 @@ class RetrievalTests(unittest.TestCase):
         with patch.dict("sys.modules", {"rank_bm25": None}):
             result = RetrievalService(self.path, dense_enabled=False).retrieve("tích chập")
         self.assertEqual(result["slides"][0]["page_number"], 3)
+
+    def test_mindmap_deduplicates_headings_across_day_files(self):
+        def day_slide(filename, page, heading, body=""):
+            text = heading if not body else f"{heading}\n{body}"
+            return {
+                "slide_id": f"{filename}_p{page:04}", "document_id": filename,
+                "filename": filename, "page_index": page - 1,
+                "page_number": page, "text": text,
+                "blocks": [{"block_id": f"{filename}_b{page}", "text": text, "bbox": [0, 0, 1, 1]}],
+            }
+
+        records = [
+            day_slide("Day01/gv1.pdf", 1, "Agenda | Day 01"),
+            day_slide("Day01/gv1.pdf", 2, "Overfitting", "chi tiết"),
+            day_slide("Day01/gv2.pdf", 1, "agenda   day 01!"),  # same topic, different presenter file
+            day_slide("Day01/gv2.pdf", 2, "Regularization"),
+            day_slide("Day02/gv1.pdf", 1, "Convolution"),
+        ]
+        self.write(records)
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.mindmap("Day01")
+        self.assertEqual(result["day"], "Day01")
+        # The "Agenda" slides (from both presenter files) have no bullet items
+        # of their own, so there's no usable agenda — but as meta/outline
+        # slides they're still excluded from the outline itself, not just
+        # deduplicated, leaving one chunked branch of real content only.
+        self.assertEqual(len(result["branches"]), 1)
+        nodes = result["branches"][0]["nodes"]
+        self.assertEqual([node["label"] for node in nodes], ["Overfitting", "Regularization"])
+        self.assertTrue(all(node["filename"].startswith("Day01/") for node in nodes))
+        self.assertEqual(nodes[0]["bbox"], [0, 0, 1, 1])
+        self.assertIn("page=2", nodes[1]["viewer_url"])
+        self.assertIn("file=Day01%2Fgv2.pdf", nodes[1]["viewer_url"])
+
+    def test_mindmap_groups_by_agenda_when_present(self):
+        def day_slide(filename, page, heading, extra_lines=()):
+            blocks = [{"block_id": f"{filename}_{page}_0", "text": heading, "bbox": [0, 0, 1, 1]}]
+            blocks += [
+                {"block_id": f"{filename}_{page}_{i}", "text": line, "bbox": [0, 0, 1, 1]}
+                for i, line in enumerate(extra_lines, start=1)
+            ]
+            text = "\n".join([heading, *extra_lines])
+            return {
+                "slide_id": f"{filename}_p{page:04}", "document_id": filename,
+                "filename": filename, "page_index": page - 1,
+                "page_number": page, "text": text, "blocks": blocks,
+            }
+
+        records = [
+            day_slide("Day05/gv.pdf", 1, "Agenda", ["• Retrieval", "• Generation"]),
+            day_slide("Day05/gv.pdf", 2, "Retrieval cơ bản"),
+            day_slide("Day05/gv.pdf", 3, "Kỹ thuật Retrieval nâng cao"),
+            day_slide("Day05/gv.pdf", 4, "Generation với LLM"),
+        ]
+        self.write(records)
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.mindmap("Day05")
+        labels = [branch["label"] for branch in result["branches"]]
+        self.assertEqual(labels, ["Retrieval", "Generation"])
+        self.assertEqual(
+            [node["label"] for node in result["branches"][0]["nodes"]],
+            ["Retrieval cơ bản", "Kỹ thuật Retrieval nâng cao"],
+        )
+        self.assertEqual([node["label"] for node in result["branches"][1]["nodes"]], ["Generation với LLM"])
+
+    def test_mindmap_excludes_recap_slides_from_nodes(self):
+        def day_slide(filename, page, heading, extra_lines=()):
+            blocks = [{"block_id": f"{filename}_{page}_0", "text": heading, "bbox": [0, 0, 1, 1]}]
+            blocks += [
+                {"block_id": f"{filename}_{page}_{i}", "text": line, "bbox": [0, 0, 1, 1]}
+                for i, line in enumerate(extra_lines, start=1)
+            ]
+            text = "\n".join([heading, *extra_lines])
+            return {
+                "slide_id": f"{filename}_p{page:04}", "document_id": filename,
+                "filename": filename, "page_index": page - 1,
+                "page_number": page, "text": text, "blocks": blocks,
+            }
+
+        records = [
+            day_slide("Day09/gv.pdf", 1, "Agenda", ["• Retrieval", "• Generation"]),
+            day_slide("Day09/gv.pdf", 2, "Retrieval cơ bản"),
+            day_slide("Day09/gv.pdf", 3, "Generation với LLM"),
+            # A recap slide appearing after the agenda was already found —
+            # it should never surface as a clickable topic, since clicking it
+            # would just show a bullet list restating the above, not content.
+            day_slide("Day09/gv.pdf", 4, "Tổng Kết — Key Takeaways", ["Retrieval", "Generation"]),
+        ]
+        self.write(records)
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.mindmap("Day09")
+        all_labels = [node["label"] for branch in result["branches"] for node in branch["nodes"]]
+        self.assertNotIn("Tổng Kết — Key Takeaways", all_labels)
+        self.assertEqual(all_labels, ["Retrieval cơ bản", "Generation với LLM"])
+
+    def test_group_into_branches_uses_dense_similarity_when_available(self):
+        slides = [{"slide_id": "s1"}, {"slide_id": "s2"}, {"slide_id": "s3"}]
+        nodes = [
+            {"label": "Cách triển khai mô hình lên production", "slide_id": "s1"},
+            {"label": "Rollout với Kubernetes", "slide_id": "s2"},
+            {"label": "Chủ đề chẳng liên quan gì", "slide_id": "missing"},  # not in dense.slides
+        ]
+        dense = FakeDense(slides, {
+            "Retrieval": {"s1": 0.9, "s2": 0.85},
+            "Generation": {"s1": 0.2, "s2": 0.3},
+        })
+        branches = _group_into_branches(nodes, ["Retrieval", "Generation"], dense=dense)
+        labels = [branch["label"] for branch in branches]
+        # Neither node literally shares a word with "Retrieval", so the old
+        # token-overlap grouping would have dumped both into "Khác"; dense
+        # similarity correctly recognizes both as about retrieval/deployment.
+        self.assertEqual(labels, ["Retrieval", "Khác"])
+        self.assertEqual([n["label"] for n in branches[0]["nodes"]], [
+            "Cách triển khai mô hình lên production", "Rollout với Kubernetes",
+        ])
+        # A node whose slide isn't in the dense index at all can't be scored,
+        # so it falls back to the catch-all rather than being dropped.
+        self.assertEqual(branches[1]["nodes"][0]["label"], "Chủ đề chẳng liên quan gì")
+
+    def test_mindmap_rejects_decorative_and_garbled_headings(self):
+        def day_slide(filename, page, heading):
+            return {
+                "slide_id": f"{filename}_p{page:04}", "document_id": filename,
+                "filename": filename, "page_index": page - 1,
+                "page_number": page, "text": heading,
+                "blocks": [{"block_id": f"{filename}_b{page}", "text": heading, "bbox": [0, 0, 1, 1]}],
+            }
+
+        records = [
+            day_slide("Day06/gv.pdf", 1, "T"),  # decorative single-letter logo
+            day_slide("Day06/gv.pdf", 2, ""),  # font-encoding mojibake
+            day_slide("Day06/gv.pdf", 3, "12"),  # bare page number
+            day_slide("Day06/gv.pdf", 4, "Fine-tuning mô hình"),
+        ]
+        self.write(records)
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.mindmap("Day06")
+        all_labels = [node["label"] for branch in result["branches"] for node in branch["nodes"]]
+        self.assertEqual(all_labels, ["Fine-tuning mô hình"])
 
     def test_rrf(self):
         fused = reciprocal_rank_fusion([[(0, 100), (1, 1)], [(1, 0.9)]])
