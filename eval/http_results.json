@@ -1,0 +1,161 @@
+{
+  "kind": "HTTP and source contracts; not semantic accuracy",
+  "quality_bar_achieved": null,
+  "cases": [
+    {
+      "id": "qa-temperature",
+      "contract_passed": true,
+      "semantic_review": "pending",
+      "http_status": 200,
+      "status": "completed",
+      "seconds": 18.594
+    },
+    {
+      "id": "study-typo",
+      "contract_passed": true,
+      "semantic_review": "blocked: provider review unavailable",
+      "http_status": 200,
+      "status": "partial",
+      "seconds": 3.281
+    },
+    {
+      "id": "study-day",
+      "contract_passed": true,
+      "semantic_review": "blocked: provider review unavailable",
+      "http_status": 200,
+      "status": "partial",
+      "seconds": 1.906
+    },
+    {
+      "id": "topic-map",
+      "contract_passed": true,
+      "semantic_review": "pending",
+      "http_status": 200,
+      "status": "completed",
+      "seconds": 1.86
+    },
+    {
+      "id": "day-range",
+      "contract_passed": true,
+      "semantic_review": "pending",
+      "http_status": 200,
+      "status": "completed",
+      "seconds": 0.812
+    },
+    {
+      "id": "day-list",
+      "contract_passed": true,
+      "semantic_review": "pending",
+      "http_status": 200,
+      "status": "completed",
+      "seconds": 0.719
+    },
+    {
+      "id": "day-seven",
+      "contract_passed": true,
+      "semantic_review": "pending",
+      "http_status": 200,
+      "status": "completed",
+      "seconds": 2.984
+    },
+    {
+      "id": "clarify-bare",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 200,
+      "status": "needs_clarification",
+      "seconds": 0.0
+    },
+    {
+      "id": "clarify-day",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 200,
+      "status": "needs_clarification",
+      "seconds": 0.063
+    },
+    {
+      "id": "clarify-keep-intent",
+      "contract_passed": true,
+      "semantic_review": "blocked: provider review unavailable",
+      "http_status": 200,
+      "status": "partial",
+      "seconds": 1.906
+    },
+    {
+      "id": "abstain-ask",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 200,
+      "status": "abstained",
+      "seconds": 0.078
+    },
+    {
+      "id": "abstain-chat",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 200,
+      "status": "no_evidence",
+      "seconds": 0.157
+    },
+    {
+      "id": "abstain-study",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 200,
+      "status": "no_evidence",
+      "seconds": 0.14
+    },
+    {
+      "id": "unknown-day",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 404,
+      "seconds": 0.0
+    },
+    {
+      "id": "outside-scope",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 422,
+      "seconds": 0.0
+    },
+    {
+      "id": "descending-days",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 422,
+      "seconds": 0.0
+    },
+    {
+      "id": "empty-question",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 422,
+      "seconds": 0.0
+    },
+    {
+      "id": "empty-clarification",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 422,
+      "seconds": 0.0
+    },
+    {
+      "id": "viewer-traversal",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 400,
+      "seconds": 0.0
+    },
+    {
+      "id": "invalid-page",
+      "contract_passed": true,
+      "semantic_review": "not_applicable",
+      "http_status": 422,
+      "seconds": 0.0
+    }
+  ],
+  "contracts_passed": 20,
+  "total": 20
+}

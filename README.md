@@ -4,14 +4,14 @@
 
 ## 👥 Thành viên nhóm & Phân công vai trò
 
-**Lớp:** 3B · **Phòng:** ____ · **Cụm:** ____ · **Track:** ____
+**Lớp:** 3B · **Phòng:** E403 · **Cụm:** C5 · **Track:** A — VLearn
 
 | Họ và Tên | Mã Học Viên | Vai trò chính | Phần việc đảm nhiệm trong dự án |
 |---|---|---|---|
-|  |  |  |  |
-|  |  |  |  |
-|  |  |  |  |
-|  |  |  |  |
+| Lưu Quang Khải |  | Đội trưởng, RAG | Quản trị repository, retrieval đa Day, QA có nguồn, agent tìm tài liệu học |
+| Tô Anh Đức |  | Grounding | Ambiguity Disambiguation, Grounded Abstention |
+| Nguyễn Thị Hạ |  | Mindmap, giao diện | Tạo mindmap và giao diện điều hướng nguồn |
+| Phạm Hương Giang |  | Kiểm soát tính năng | Đề xuất và kiểm soát tính năng hệ thống |
 
 > Nhóm copy nguyên file README này về repo của mình, rồi điền bảng trên. Cột **Phần việc đảm nhiệm** ghi càng cụ thể càng tốt.
 

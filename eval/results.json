@@ -1,0 +1,10 @@
+{
+  "date": "2026-09-19",
+  "python_tests": {"passed": 172, "failed": 0},
+  "node_ui_checks": {"passed": 19, "failed": 0},
+  "real_http_contract_cases": {"passed": 20, "failed": 0, "report": "http_results.json"},
+  "chrome": {"mindmap_sources": "passed", "clarification_intent_and_scope": "passed", "abstention_suggestions": "passed", "javascript_errors": 0},
+  "provider_review": "blocked: HTTP 429 credit_balance_exhausted / insufficient_quota",
+  "semantic_quality_bar_achieved": null,
+  "user_validation": "not supplied; automated checks are not user validation"
+}

@@ -1,0 +1,22 @@
+[
+  {"id":"qa-temperature","method":"POST","path":"/api/chat","payload":{"question":"Temperature là gì?","scope":["Day01"]},"http":200,"task":"answer","sources":true,"semantic_review":true},
+  {"id":"study-typo","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap các file tài liệu tôi cần học tên gì nằm ở day nào để tôi hiểu về tranformers"},"http":200,"task":"study_materials","documents":true,"semantic_review":true},
+  {"id":"study-day","method":"POST","path":"/api/chat","payload":{"question":"Tôi muốn học về Transformers, tài liệu nào ở ngày nào?","scope":["Day01"]},"http":200,"task":"study_materials","documents":true,"semantic_review":true},
+  {"id":"topic-map","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap về Transformer day 1"},"http":200,"task":"topic_map","branches":true,"semantic_review":true},
+  {"id":"day-range","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap từ day 1 đến day 3"},"http":200,"task":"day_summary","days":["Day 01","Day 02","Day 03"],"semantic_review":true},
+  {"id":"day-list","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap day 1 và day 3"},"http":200,"task":"day_summary","days":["Day 01","Day 03"],"semantic_review":true},
+  {"id":"day-seven","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap day 7"},"http":200,"task":"day_summary","branches":true,"semantic_review":true},
+  {"id":"clarify-bare","method":"POST","path":"/api/chat","payload":{"question":"giải thích"},"http":200,"status":"needs_clarification"},
+  {"id":"clarify-day","method":"POST","path":"/api/chat","payload":{"question":"cái này chạy thế nào","scope":["Day01"]},"http":200,"status":"needs_clarification"},
+  {"id":"clarify-keep-intent","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap các tài liệu về cái này","clarification_topic":"Transformers","scope":["Day01"]},"http":200,"task":"study_materials","documents":true,"semantic_review":true},
+  {"id":"abstain-ask","method":"POST","path":"/api/ask","payload":{"question":"UnknownTopic987654 là gì?","scope":["Day02"]},"http":200,"status":"abstained"},
+  {"id":"abstain-chat","method":"POST","path":"/api/chat","payload":{"question":"UnknownTopic987654 là gì?","scope":["Day02"]},"http":200,"status":"no_evidence"},
+  {"id":"abstain-study","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap các tài liệu để học về UnknownTopic987654"},"http":200,"status":"no_evidence"},
+  {"id":"unknown-day","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap day 99"},"http":404},
+  {"id":"outside-scope","method":"POST","path":"/api/chat","payload":{"question":"tạo mindmap day 7","scope":["Day01"]},"http":422},
+  {"id":"descending-days","method":"POST","path":"/api/chat","payload":{"question":"mindmap từ day 3 đến day 1"},"http":422},
+  {"id":"empty-question","method":"POST","path":"/api/chat","payload":{"question":" "},"http":422},
+  {"id":"empty-clarification","method":"POST","path":"/api/chat","payload":{"question":"cái này","clarification_topic":" "},"http":422},
+  {"id":"viewer-traversal","method":"GET","path":"/api/page","payload":{"file":"../.env","page":1},"http":400},
+  {"id":"invalid-page","method":"GET","path":"/api/page","payload":{"file":"anything.pdf","page":0},"http":422}
+]
