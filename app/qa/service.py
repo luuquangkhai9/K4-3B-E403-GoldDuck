@@ -11,8 +11,10 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .generator import AnswerGenerator
 from .prompts import (
     INSUFFICIENT_EVIDENCE,
+    INTENT_SYSTEM_PROMPT,
     MINDMAP_SYSTEM_PROMPT,
     ORGANIZE_SYSTEM_PROMPT,
+    build_intent_prompt,
     build_mindmap_prompt,
     build_organize_prompt,
     build_prompt,
@@ -256,3 +258,41 @@ class QAService:
             if branch_nodes:
                 branches.append({"label": label.strip()[:40], "nodes": branch_nodes})
         return branches or None
+
+    def extract_mindmap_intent(self, message: str, available_days: Sequence[str]) -> dict[str, Any] | None:
+        """Ask the LLM which day and/or topic a chat message wants a mindmap for.
+
+        Regex-based keyword stripping breaks on any phrasing it wasn't
+        written for (a new way to say "day 7", a whole rambling question
+        instead of a short topic) — the model instead reads the message like
+        a person would. `day` is constrained to a real value from
+        `available_days` (or null); it can never invent one. Returns None
+        (caller falls back to its own regex parsing) when the model is
+        unavailable or replies with something unusable.
+        """
+        if not isinstance(message, str) or not message.strip() or not self.generator.available:
+            return None
+        try:
+            generated = self.generator.generate(
+                build_intent_prompt(message, available_days), instructions=INTENT_SYSTEM_PROMPT
+            )
+        except Exception as exc:
+            logger.warning("LLM unavailable (%s); using regex mindmap intent parsing", type(exc).__name__)
+            return None
+        if not generated:
+            return None
+        text = _CODE_FENCE.sub("", generated.strip()).strip()
+        try:
+            payload = json.loads(text)
+        except (ValueError, TypeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        day = payload.get("day")
+        if not isinstance(day, str) or day not in available_days:
+            day = None
+        topic = payload.get("topic")
+        topic = topic.strip()[:200] if isinstance(topic, str) and topic.strip() else None
+        if day is None and topic is None:
+            return None
+        return {"day": day, "topic": topic}

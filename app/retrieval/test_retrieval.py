@@ -72,6 +72,50 @@ class RetrievalTests(unittest.TestCase):
                 self.assertEqual(evidence["bbox"], [0.1, 0.2, 0.8, 0.4])
                 self.assertIn(f"page={expected}", evidence["viewer_url"])
 
+    def test_evidence_skips_page_furniture_blocks(self):
+        filename = "Day01/gv.pdf"
+        record = {
+            "slide_id": "doc_p0001", "document_id": "doc",
+            "filename": filename, "page_index": 0, "page_number": 1,
+            "text": "Transformer — Input Embedding\nGiảng viên (VinUni)\nAICB Ngày 1\n02/04/2026\n14 / 67",
+            "blocks": [
+                {"block_id": "b0", "text": "Transformer — Input Embedding", "bbox": [0, 0, 1, 0.1]},
+                # Every line here is page furniture (presenter/cohort/date/page
+                # fraction) — it used to score well whenever its page was
+                # relevant and get surfaced as if it were real content.
+                {"block_id": "b1", "text": "Giảng viên (VinUni)\nAICB Ngày 1\n02/04/2026\n14 / 67",
+                 "bbox": [0, 0.9, 1, 1]},
+            ],
+        }
+        self.write([record])
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.retrieve("Transformer")
+        self.assertEqual([e["quote"] for e in result["evidence"]], ["Transformer — Input Embedding"])
+
+    def test_evidence_keeps_real_content_behind_an_icon_glyph(self):
+        filename = "Day04/gv.pdf"
+        icon = ""  # private-use bullet glyph some decks prefix list items with
+        record = {
+            "slide_id": "doc_p0001", "document_id": "doc",
+            "filename": filename, "page_index": 0, "page_number": 1,
+            "text": f"{icon}\nTính mỏng manh của prompt: đổi 1 từ, model đổi toàn bộ kết quả",
+            "blocks": [
+                # Real content behind a decorative icon char must survive —
+                # rejecting the whole block over one glyph threw away content.
+                {"block_id": "b0",
+                 "text": f"{icon}\nTính mỏng manh của prompt: đổi 1 từ, model đổi toàn bộ kết quả",
+                 "bbox": [0, 0, 1, 0.2]},
+                {"block_id": "b1", "text": icon, "bbox": [0, 0.9, 1, 1]},  # icon alone: nothing to keep
+            ],
+        }
+        self.write([record])
+        service = RetrievalService(self.path, dense_enabled=False)
+        result = service.retrieve("prompt")
+        self.assertEqual(
+            [e["quote"] for e in result["evidence"]],
+            [f"{icon}\nTính mỏng manh của prompt: đổi 1 từ, model đổi toàn bộ kết quả"],
+        )
+
     def test_empty_missing_unrelated_and_reload(self):
         service = RetrievalService(self.path, dense_enabled=False)
         self.assertEqual(service.retrieve("   "), {"slides": [], "evidence": []})

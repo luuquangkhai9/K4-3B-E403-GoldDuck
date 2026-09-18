@@ -201,15 +201,25 @@ async function openMindmap(day) {
 
 // ---- Chat-triggered mindmap ("tạo mindmap day 2", "vẽ sơ đồ tư duy về RAG") ----
 const MINDMAP_TRIGGER = /(mindmap|sơ đồ tư duy)/i;
-const DAY_REFERENCE = /\b(?:day|buổi)\s*0*([0-9]{1,2})\b/i;
+const DAY_REFERENCE = /\b(?:day|buổi|ngày)\s*0*([0-9]{1,2})\b/i;
 // Includes Vietnamese sentence-final particles ("làm đi", "vẽ giúp mình cái
 // mindmap đi nhé") that carry no topic meaning — left in, they get sent as
 // the "topic" and retrieval matches their unrelated literal sense instead
 // (e.g. "đi" as in "nước đi" / a chess move) producing a nonsense mindmap.
-const MINDMAP_FILLER_WORDS = /\b(tạo|vẽ|làm|xem|hãy|giúp(?: tôi| mình)?|cho tôi|cho mình|dùm|giùm|về|của|kiến thức|nội dung|đi|nhé|nha|nào|ạ|thử|coi|xíu|chút|nhỉ|luôn|với)\b/gi;
+// "nào" is deliberately NOT in this list: it's a filler only in bare
+// exclamations ("làm đi nào"), but it's also the real question word in
+// "ngày nào" / "cái nào" — stripping it blindly mangled genuine questions
+// like "tài liệu nằm ở ngày nào?" into "nằm ở ngày ?".
+//
+// Uses (?:^|\s)...(?=\s|$) instead of \b: JS's \b is defined in terms of
+// \w, which only covers ASCII letters, so it does not see a boundary
+// between a Vietnamese diacritic vowel and whitespace (e.g. "về ", "vẽ ",
+// "nhé ") — \b(về)\b silently fails to match "về" at all, leaving these
+// words stuck in the extracted topic.
+const MINDMAP_FILLER_WORDS = /(?:^|\s)(?:làm ơn|tạo|vẽ|làm|xem|hãy|giúp(?: tôi| mình)?|cho tôi|cho mình|dùm|giùm|về|của|kiến thức|nội dung|đi|nhé|nha|ạ|thử|coi|xíu|chút|nhỉ|luôn|với|cái)(?=\s|$)/gi;
 // Defense in depth: catches a leftover filler word the regex above missed,
 // so an empty/near-empty topic never silently reaches retrieval.
-const MINDMAP_TRIVIAL_TOPICS = new Set(['', 'đi', 'nhé', 'nha', 'nào', 'ạ', 'ừ', 'ờ', 'thế', 'vậy', 'này', 'đó', 'ấy', 'nhỉ', 'luôn', 'coi', 'thử']);
+const MINDMAP_TRIVIAL_TOPICS = new Set(['', 'đi', 'nhé', 'nha', 'ạ', 'ừ', 'ờ', 'thế', 'vậy', 'này', 'đó', 'ấy', 'nhỉ', 'luôn', 'coi', 'thử']);
 
 function parseMindmapIntent(text) {
   if (!MINDMAP_TRIGGER.test(text)) return null;
@@ -219,6 +229,9 @@ function parseMindmapIntent(text) {
     .replace(MINDMAP_TRIGGER, ' ')
     .replace(DAY_REFERENCE, ' ')
     .replace(MINDMAP_FILLER_WORDS, ' ')
+    // Orphaned punctuation left where the trigger phrase used to be, e.g.
+    // "Vẽ sơ đồ tư duy: X" → "Vẽ : X" once "sơ đồ tư duy" is removed.
+    .replace(/[,:;]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   if (MINDMAP_TRIVIAL_TOPICS.has(topic.toLowerCase())) topic = '';
@@ -249,7 +262,27 @@ function addMindmapMessage(title, branches) {
   scrollToBottom();
 }
 
-async function handleMindmapChat(intent) {
+async function resolveMindmapIntent(question) {
+  // Regex-based extraction breaks on any phrasing it wasn't written for
+  // ("buổi học số 7", a whole rambling question instead of a short topic).
+  // Ask the LLM to read the message like a person would; fall back to the
+  // regex parse only when the model is unavailable or gives nothing usable.
+  try {
+    const response = await fetch('/api/mindmap/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: question }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data && (data.day || data.topic)) return { day: data.day || null, topic: data.topic || '' };
+    }
+  } catch { /* fall through to the regex parser below */ }
+  return parseMindmapIntent(question) || { day: null, topic: '' };
+}
+
+async function handleMindmapChat(question) {
+  const intent = await resolveMindmapIntent(question);
   if (!intent.day && !intent.topic) {
     status.textContent = 'Bạn muốn xem sơ đồ tư duy về chủ đề gì hoặc buổi học nào? Ví dụ: "tạo mindmap về RAG" hoặc "tạo mindmap buổi 3".';
     return;
@@ -479,9 +512,8 @@ async function send() {
   sendButton.disabled = true;
   status.textContent = '';
 
-  const mindmapIntent = parseMindmapIntent(question);
-  if (mindmapIntent) {
-    await handleMindmapChat(mindmapIntent);
+  if (MINDMAP_TRIGGER.test(question)) {
+    await handleMindmapChat(question);
     sendButton.disabled = false;
     input.focus();
     return;

@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.schemas import AskRequest, MindmapRequest, QAResponse
+from app.api.schemas import AskRequest, MindmapIntentRequest, MindmapRequest, QAResponse
 from app.viewer.evidence import normalized_bbox, resolve_pdf, viewer_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +87,19 @@ def mindmap(day: str):
     except Exception as exc:
         log.exception("Mindmap generation failed")
         raise HTTPException(500, "Không tạo được sơ đồ tư duy. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
+
+
+@app.post("/api/mindmap/intent")
+def mindmap_intent(request: MindmapIntentRequest):
+    try:
+        retrieval, qa = get_services()
+        intent = qa.extract_mindmap_intent(request.message, retrieval.available_scopes)
+        return intent or {"day": None, "topic": None}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.exception("Mindmap intent extraction failed")
+        raise HTTPException(500, "Không phân tích được yêu cầu sơ đồ tư duy.") from exc
 
 
 @app.post("/api/mindmap/generate")

@@ -151,6 +151,13 @@ class DemoIntegrationTests(unittest.TestCase):
         self.assertEqual(node["filename"], self.filename)
         self.assertEqual(node["page_number"], 1)
 
+    def test_mindmap_intent_validates_and_defaults_without_model(self):
+        for payload in ({"message": "   "}, {}, {"message": "x" * 4001}):
+            self.assertEqual(self.client.post("/api/mindmap/intent", json=payload).status_code, 422)
+        response = self.client.post("/api/mindmap/intent", json={"message": "tạo mindmap về RAG"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json(), {"day": None, "topic": None})
+
     def test_missing_or_invalid_sources(self):
         for filename in ("../outside.pdf", str(self.pdf_dir / self.filename), "../README.md"):
             with self.subTest(filename=filename):

@@ -7,7 +7,13 @@ from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
 from .generator import AnswerGenerator
-from .prompts import INSUFFICIENT_EVIDENCE, MINDMAP_SYSTEM_PROMPT, ORGANIZE_SYSTEM_PROMPT, SYSTEM_PROMPT
+from .prompts import (
+    INSUFFICIENT_EVIDENCE,
+    INTENT_SYSTEM_PROMPT,
+    MINDMAP_SYSTEM_PROMPT,
+    ORGANIZE_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
+)
 from .service import QAService, prepare_evidence
 
 
@@ -136,6 +142,21 @@ class QATests(unittest.TestCase):
         generator.generate("input", instructions="custom rules")
         self.assertEqual(captured["instructions"], "custom rules")
 
+    def test_openai_adapter_omits_temperature_unless_explicitly_set(self):
+        # Reasoning-tier models (the default gpt-5.6 included) reject an
+        # explicit temperature outright ("Unsupported parameter") — omitting
+        # it by default avoids turning every call into a 400.
+        captured = {}
+        def create(**kwargs):
+            captured.update(kwargs)
+            return SimpleNamespace(output_text="{}", status="completed")
+        client = SimpleNamespace(responses=SimpleNamespace(create=create))
+        AnswerGenerator(client=client).generate("input")
+        self.assertNotIn("temperature", captured)
+        captured.clear()
+        AnswerGenerator(client=client, temperature=0.0).generate("input")
+        self.assertEqual(captured["temperature"], 0.0)
+
     def test_mindmap_without_model_returns_extractive_branch(self):
         result = QAService(generator=AnswerGenerator(api_key="")).mindmap("RAG", [source()])
         self.assertEqual(result["title"], "RAG")
@@ -210,6 +231,27 @@ class QATests(unittest.TestCase):
         for output in ("not json", "{}", json.dumps({"branches": "nope"})):
             self.assertIsNone(QAService(generator=FakeGenerator(output)).organize_mindmap("Day05", nodes))
         self.assertIsNone(QAService(generator=FakeGenerator(TimeoutError())).organize_mindmap("Day05", nodes))
+
+    def test_extract_mindmap_intent_returns_validated_day_and_topic(self):
+        generator = FakeGenerator(json.dumps({"day": "Day07", "topic": "transformer"}))
+        result = QAService(generator=generator).extract_mindmap_intent(
+            "cho tôi xem mindmap của buổi học số 7 về transformer", ["Day01", "Day07"]
+        )
+        self.assertEqual(generator.instructions, INTENT_SYSTEM_PROMPT)
+        self.assertEqual(result, {"day": "Day07", "topic": "transformer"})
+
+    def test_extract_mindmap_intent_rejects_day_not_in_available_list(self):
+        generator = FakeGenerator(json.dumps({"day": "Day99", "topic": "RAG"}))
+        result = QAService(generator=generator).extract_mindmap_intent("...", ["Day01", "Day07"])
+        self.assertEqual(result, {"day": None, "topic": "RAG"})
+
+    def test_extract_mindmap_intent_returns_none_when_unusable(self):
+        for output in ("not json", json.dumps({"day": None, "topic": None}), json.dumps({"day": None, "topic": "  "})):
+            result = QAService(generator=FakeGenerator(output)).extract_mindmap_intent("...", ["Day01"])
+            self.assertIsNone(result)
+        self.assertIsNone(QAService(generator=AnswerGenerator(api_key="")).extract_mindmap_intent("...", ["Day01"]))
+        self.assertIsNone(QAService(generator=FakeGenerator(TimeoutError())).extract_mindmap_intent("...", ["Day01"]))
+        self.assertIsNone(QAService(generator=FakeGenerator("must not be used")).extract_mindmap_intent("   ", ["Day01"]))
 
 
 if __name__ == "__main__":

@@ -48,6 +48,18 @@ class MindmapRequest(BaseModel):
         return _clean_scope(value)
 
 
+class MindmapIntentRequest(BaseModel):
+    message: Annotated[str, Field(min_length=1, max_length=4000)]
+
+    @field_validator("message")
+    @classmethod
+    def strip_message(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Vui lòng nhập nội dung.")
+        return value
+
+
 class Citation(BaseModel):
     evidence_id: str
     filename: str

@@ -41,6 +41,26 @@ _GENERIC_AGENDA_WORDS = {
     "time", "activities", "activity", "agenda", "description", "note", "notes",
     "thời gian", "hoạt động", "nội dung", "mô tả", "ghi chú", "stt",
 }
+# Slide footers ("Giảng viên (VinUni) / AICB - Ngày 1 / 02/04/2026 / 14 / 67")
+# score well when their page is relevant, but every line is page furniture,
+# not content — a block only qualifies if it has at least one line that
+# isn't pure boilerplate.
+_BOILERPLATE_LINE = re.compile(
+    r"^\s*(?:gi[aả]ng vi[eê]n\b|aicb\b|\d{1,2}/\d{1,2}/\d{2,4}\s*$|\d+\s*/\s*\d+\s*$)",
+    re.IGNORECASE,
+)
+
+
+def _is_usable_evidence_text(text: str) -> bool:
+    # Some decks prefix bullets with an icon-font glyph that lands in the
+    # private-use area (e.g. " Tính mỏng manh..."); stripping it before
+    # judging the block keeps the real sentence that follows instead of
+    # rejecting the whole block over one decorative character.
+    cleaned = _GARBLED_CHARS.sub("", text)
+    if sum(1 for ch in cleaned if ch.isalpha()) < 2:
+        return False
+    lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+    return bool(lines) and not all(_BOILERPLATE_LINE.match(line) for line in lines)
 
 
 def _clean_heading(text: str, *, max_length: int = 90) -> str | None:
@@ -357,6 +377,8 @@ class RetrievalService:
             for block_rank, block in enumerate(blocks):
                 text = block.get("text", "")
                 if not isinstance(text, str) or not text.strip():
+                    continue
+                if not _is_usable_evidence_text(text):
                     continue
                 tokens = set(tokenize(text))
                 matching = query & tokens
