@@ -16,6 +16,38 @@ _FILLER = re.compile(
 )
 
 
+def extract_explicit_day_scope(message):
+    """Parse days for any chat task, preserving unknown days for validation."""
+    days = []
+
+    def replace_range(match):
+        start, end = map(int, match.groups())
+        if start < 1 or end < start or end - start + 1 > 50:
+            raise ValueError("Phạm vi ngày không hợp lệ; dùng ngày tăng dần, tối đa 50 ngày.")
+        days.extend(range(start, end + 1))
+        return " "
+
+    remainder = _RANGE.sub(replace_range, message)
+    days.extend(int(match[1]) for match in _REFERENCE.finditer(remainder))
+    for match in _LIST.finditer(remainder):
+        days.extend(int(number) for number in re.findall(r"\d+", match[0]))
+    scope = normalize_scope(days)
+    if scope and len(scope) > 50:
+        raise ValueError("Chỉ có thể chọn tối đa 50 ngày.")
+    return scope
+
+
+def extract_mindmap_topic(message):
+    remainder = _RANGE.sub(" ", message)
+    remainder = _LIST.sub(" ", remainder)
+    remainder = _REFERENCE.sub(" ", remainder)
+    remainder = _TRIGGER.sub(" ", remainder)
+    remainder = re.sub(r"[,:;.!?]+", " ", remainder)
+    remainder = re.sub(r"\s+", " ", remainder).strip()
+    remainder = _FILLER.sub(" ", remainder)
+    return re.sub(r"\s+", " ", remainder).strip()[:200] or None
+
+
 def parse_explicit_mindmap_scope(message):
     """Return a multi-day intent; preserve unknown days for API validation."""
     if not isinstance(message, str) or not _TRIGGER.search(message):

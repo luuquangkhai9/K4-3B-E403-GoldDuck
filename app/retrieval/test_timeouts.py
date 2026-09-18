@@ -137,7 +137,7 @@ for line in sys.stdin:
         self.assertEqual(query, "transformers transformer")
         self.assertEqual(fixes, {"tranformers": "transformers"})
         self.assertEqual(prepare_query("Tôi muốn học về qwertyzxc, tài liệu nào?", {"transformer": 3})[0], "qwertyzxc")
-        self.assertEqual(prepare_query("Tranformers là gì?", {"transformers": 3})[0], "Tranformers là gì?")
+        self.assertEqual(prepare_query("Tranformers là gì?", {"transformers": 3})[0], "transformers là gì?")
 
     def test_real_api_answers_when_dense_startup_stalls(self):
         with tempfile.TemporaryDirectory() as temporary:

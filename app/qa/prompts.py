@@ -78,6 +78,8 @@ def build_mindmap_prompt(topic: str, evidence: Sequence[Mapping[str, Any]]) -> s
             "evidence_id": item["evidence_id"],
             "filename": item["filename"],
             "page_number": item["page_number"],
+            "day_id": item.get("day_id"),
+            "day_label": item.get("day_label"),
             "quote": item["quote"],
         }
         for item in evidence

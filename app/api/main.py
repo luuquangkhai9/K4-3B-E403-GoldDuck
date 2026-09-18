@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.api.schemas import AskRequest, DayCatalog, DayDetail, DaySlidesPage, MindmapIntentRequest, MindmapOverviewRequest, MindmapRequest, QAResponse
+from app.api.schemas import AskRequest, ChatRequest, ChatResponse, DayCatalog, DayDetail, DaySlidesPage, MindmapIntentRequest, MindmapOverviewRequest, MindmapRequest, QAResponse
 from app.ingestion.metadata import normalize_day_id, resolve_day_scope
 from app.runtime import bounded_lock, configured_timeout, configure_windows_runtime, request_deadline
 from app.viewer.evidence import normalized_bbox, resolve_pdf, viewer_url
@@ -110,6 +110,32 @@ def learning_day_slides(day_id: str, offset: int = Query(default=0, ge=0), limit
 def ask(request: AskRequest):
     with request_deadline(configured_timeout("REQUEST_TIMEOUT_SECONDS", 45)):
         return process_ask(request)
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+def chat(request: ChatRequest):
+    with request_deadline(configured_timeout("REQUEST_TIMEOUT_SECONDS", 45)):
+        try:
+            from app.agent.service import ChatAgent
+            require_filters(request.day_id, request.scope)
+            retrieval, qa = get_services()
+            scope = resolve_day_scope(request.day_id, request.scope)
+            result = ChatAgent(retrieval, qa).run(
+                request.question, scope=scope,
+                context=request.context.model_dump() if request.context else None,
+                validate_scope=lambda days: require_filters(scope=days),
+                answer_handler=lambda question, days: process_ask(AskRequest(question=question, scope=days)),
+            )
+            return ChatResponse.model_validate(result)
+        except HTTPException:
+            raise
+        except ValueError as exc:
+            raise HTTPException(422, "Yêu cầu hoặc phạm vi không hợp lệ: " + str(exc)) from exc
+        except TimeoutError as exc:
+            raise HTTPException(503, "Hệ thống đang bận hoặc quá thời gian xử lý; vui lòng thử lại.") from exc
+        except Exception as exc:
+            log.warning("Chat orchestration failed (%s)", type(exc).__name__)
+            raise HTTPException(500, "Không xử lý được yêu cầu. Kiểm tra log máy chủ và cấu hình chỉ mục.") from exc
 
 
 def process_ask(request):

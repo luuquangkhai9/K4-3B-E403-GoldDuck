@@ -335,6 +335,11 @@ body {
 .mindmap-inline .mindmap-root { font-size: 13px; padding: 10px 18px; }
 .mindmap-inline .mindmap-branch { max-width: 150px; }
 .mindmap-inline .mindmap-node { max-width: 220px; }
+.mindmap-document { width: 300px; max-width: 300px; }
+.mindmap-document .mindmap-node { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
+.mindmap-document-reason { padding: 5px 8px; font-size: 12px; line-height: 1.5; color: #475569; }
+.mindmap-document-location { padding: 0 8px 4px; font-size: 11px; color: #64748b; }
+.mindmap-document .source-row { padding: 0 8px; }
 
 /* Chat */
 .chat {

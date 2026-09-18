@@ -2,6 +2,7 @@ const input = document.getElementById('input');
 const sendButton = document.getElementById('send');
 const status = document.getElementById('status');
 let busy = false;
+let chatContext = null;
 
 async function fetchWithTimeout(url, options = {}, milliseconds = 60000, format = 'json') {
   const controller = new AbortController();
@@ -191,7 +192,31 @@ function buildMindmapTree(title, branches) {
           bbox: node.bbox || null,
         });
       });
-      leaves.append(leaf);
+      if (node.sources?.length) {
+        const card = document.createElement('div');
+        card.className = 'mindmap-document';
+        const reason = document.createElement('div');
+        reason.className = 'mindmap-document-reason';
+        reason.textContent = `${node.role === 'supporting' ? 'Bổ trợ: ' : node.role === 'candidate' ? 'Chưa thẩm định: ' : ''}${node.reason || ''}`;
+        const location = document.createElement('div');
+        location.className = 'mindmap-document-location';
+        location.textContent = `${node.day_label || 'Chưa xác định ngày học'} · Slide ${(node.pages || [node.page_number]).join(', ')}`;
+        const sources = document.createElement('div');
+        sources.className = 'source-row';
+        for (const source of node.sources) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'citation-chip';
+          button.textContent = `${source.evidence_id} · Slide ${source.page_number}${source.evidence_type === 'visual' ? ' · Vision' : ''}`;
+          button.title = source.filename;
+          button.addEventListener('click', () => openCitation(source));
+          sources.append(button);
+        }
+        card.append(leaf, reason, location, sources);
+        leaves.append(card);
+      } else {
+        leaves.append(leaf);
+      }
       leafEls.push(leaf);
     }
     row.append(leaves);
@@ -571,20 +596,22 @@ async function send() {
   status.textContent = '';
 
   try {
-    if (MINDMAP_TRIGGER.test(question)) {
-      await handleMindmapChat(question, scope);
-      return;
-    }
-    onlineStatus.textContent = 'Đang tìm bằng chứng…';
+    onlineStatus.textContent = 'Đang tìm nội dung và kiểm tra nguồn…';
     addTypingIndicator();
-    const {response, data} = await fetchWithTimeout('/api/ask', {
+    const {response, data} = await fetchWithTimeout('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, scope }),
+      body: JSON.stringify({ question, scope, context: chatContext }),
     });
     if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Câu hỏi không hợp lệ hoặc máy chủ chưa sẵn sàng.');
     removeTypingIndicator();
     addAiMessage(data.answer, data.citations || [], scope);
+    if (data.output_format === 'mindmap' && data.branches?.length) {
+      addMindmapMessage(data.title || 'Sơ đồ tư duy', data.branches);
+    }
+    if (data.context?.topic && ['completed', 'partial'].includes(data.status)) {
+      chatContext = data.context;
+    }
   } catch (error) {
     removeTypingIndicator();
     status.textContent = errorMessage(error, 'Không kết nối được máy chủ.');

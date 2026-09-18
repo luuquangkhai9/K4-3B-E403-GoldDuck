@@ -113,6 +113,41 @@ class QAResponse(BaseModel):
     debug: dict[str, Any] | None = None
 
 
+class ChatContext(BaseModel):
+    task: Literal["answer", "study_materials", "topic_map", "day_summary"]
+    topic: str | None = Field(default=None, max_length=200)
+    document_ids: list[Annotated[str, Field(min_length=1, max_length=120)]] = Field(default_factory=list, max_length=12)
+
+
+class ChatRequest(AskRequest):
+    context: ChatContext | None = None
+
+
+class StudyDocument(BaseModel):
+    document_id: str
+    filename: str
+    title: str
+    day_id: str | None
+    day_number: int | None = None
+    day_label: str | None
+    total_pages: int = Field(ge=1)
+    reason: str
+    role: Literal["core", "supporting", "candidate"]
+    pages: list[int]
+    sources: list[Citation]
+
+
+class ChatResponse(QAResponse):
+    task: Literal["answer", "study_materials", "topic_map", "day_summary"]
+    output_format: Literal["text", "mindmap"]
+    status: Literal["completed", "partial", "no_evidence", "needs_clarification",
+                    "retrieval_timeout", "model_unavailable", "invalid_output"]
+    title: str
+    branches: list[dict[str, Any]] = Field(default_factory=list)
+    documents: list[StudyDocument] = Field(default_factory=list)
+    context: ChatContext
+
+
 class DayDocument(BaseModel):
     document_id: str
     filename: str

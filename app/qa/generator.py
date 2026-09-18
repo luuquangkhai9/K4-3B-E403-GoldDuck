@@ -1,6 +1,7 @@
 """Optional OpenAI adapter; extractive mode needs no SDK or API key."""
 
 import os
+import json
 from typing import Any
 
 from .prompts import SYSTEM_PROMPT
@@ -35,6 +36,21 @@ class AnswerGenerator:
         return self.client is not None or bool(self.api_key.strip())
 
     def generate(self, prompt: str, *, instructions: str | None = None) -> str:
+        return self._generate(prompt, instructions=instructions)
+
+    def generate_json(self, prompt: str, *, instructions: str, schema: dict, name: str,
+                      timeout: float = 20.0) -> dict:
+        """Strict output for bounded planning/review; callers validate semantics."""
+        text = self._generate(prompt, instructions=instructions, timeout=timeout, text={
+            "format": {"type": "json_schema", "name": name, "schema": schema, "strict": True},
+        }, max_output_tokens=4000)
+        result = json.loads(text)
+        if not isinstance(result, dict):
+            raise ValueError("Expected a JSON object")
+        return result
+
+    def _generate(self, prompt: str, *, instructions: str | None = None,
+                  timeout: float | None = None, max_output_tokens: int = 2000, **options) -> str:
         if not self.available:
             return ""
         configure_windows_runtime()
@@ -51,9 +67,10 @@ class AnswerGenerator:
             model=self.model,
             instructions=instructions if instructions is not None else SYSTEM_PROMPT,
             input=prompt,
-            max_output_tokens=2000,
+            max_output_tokens=max_output_tokens,
             store=False,
-            timeout=remaining_timeout(self.timeout),
+            timeout=remaining_timeout(min(self.timeout, timeout) if timeout is not None else self.timeout),
+            **options,
             **kwargs,
         )
         if getattr(response, "status", "completed") != "completed":

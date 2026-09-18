@@ -53,7 +53,10 @@ async function setup(handler) {
         {day_id: 'Day01', document_count: 2}, {day_id: 'Day07', document_count: 3},
       ], unassigned_document_count: 1})};
       const result = await handler(url, options);
-      return {ok: result.status !== 404, json: async () => result.data || {}, blob: async () => new Blob()};
+      const data = url === '/api/chat' ? {
+        answer: 'Đã trả lời', citations: [], status: 'completed', output_format: 'text', ...result.data,
+      } : result.data || {};
+      return {ok: !result.status || result.status < 400, json: async () => data, blob: async () => new Blob()};
     },
   });
   vm.runInContext(source, context, {filename: 'app.js'});
@@ -74,23 +77,24 @@ async function main() {
 
   ui.run("selectedScope = ['Day01', 'Day07']; input.value = 'Tạo mindmap Transformer buổi học số 7';");
   await ui.run('send()');
-  const generated = ui.calls.find(call => call.url === '/api/mindmap/generate');
-  assert.deepEqual(generated.body, {topic: 'Transformer', day_id: 'Day07', scope: ['Day01', 'Day07']});
+  const generated = ui.calls.find(call => call.url === '/api/chat');
+  assert.deepEqual(generated.body, {question: 'Tạo mindmap Transformer buổi học số 7', scope: ['Day01', 'Day07'], context: null});
   assert.equal(ui.calls.filter(call => call.url.startsWith('/api/mindmap?')).length, 0);
+  assert.equal(ui.calls.filter(call => call.url === '/api/mindmap/intent').length, 0);
   assert.equal(ui.elements.get('send').disabled, false); checks++;
 
   const unknown = await setup(async url => url === '/api/mindmap/intent'
     ? {data: {day: null, topic: 'RAG'}} : {status: 404, data: {detail: 'Không tìm thấy ngày học'}});
   unknown.run("input.value = 'Tạo mindmap RAG buổi 99';");
   await unknown.run('send()');
-  assert.equal(unknown.calls.find(call => call.url === '/api/mindmap/generate').body.day_id, 'Day99');
+  assert.equal(unknown.calls.find(call => call.url === '/api/chat').body.question, 'Tạo mindmap RAG buổi 99');
   assert.match(unknown.elements.get('status').textContent, /Không tìm thấy ngày/); checks++;
 
   const overview = await setup(async url => url === '/api/mindmap/intent'
     ? {data: {day: 'Day07', topic: null}} : {data: {day: 'Day07', branches: []}});
   overview.run("input.value = 'Tạo mindmap buổi 7';");
   await overview.run('send()');
-  assert.equal(overview.calls.filter(call => call.url === '/api/mindmap?day=Day07').length, 1);
+  assert.equal(overview.calls.filter(call => call.url === '/api/chat').length, 1);
   assert.equal(overview.calls.filter(call => call.url === '/api/mindmap/generate').length, 0); checks++;
 
   let complete;
@@ -99,8 +103,8 @@ async function main() {
   const first = pending.run('send()');
   pending.run("selectedScope = ['Day01']; input.value = 'Gửi lặp';");
   await pending.run('send()');
-  assert.equal(pending.calls.filter(call => call.url === '/api/ask').length, 1);
-  assert.deepEqual(pending.calls.find(call => call.url === '/api/ask').body.scope, ['Day07']);
+  assert.equal(pending.calls.filter(call => call.url === '/api/chat').length, 1);
+  assert.deepEqual(pending.calls.find(call => call.url === '/api/chat').body.scope, ['Day07']);
   complete({data: {answer: 'Đã trả lời', citations: []}});
   await first;
   assert.equal(pending.run('busy'), false);
@@ -123,21 +127,21 @@ async function main() {
   assert.equal(intent.day, 'Day07');
   assert.equal(intent.topic, 'RAG'); checks++;
 
-  const range = await setup(async url => url === '/api/mindmap/overview'
-    ? {data: {title: 'Day 01 · Day 02 · Day 03', branches: [
+  const range = await setup(async () => ({data: {output_format: 'mindmap', title: 'Day 01 · Day 02 · Day 03', branches: [
       {label: 'Day 01', nodes: []}, {label: 'Day 02', nodes: []}, {label: 'Day 03', nodes: []},
-    ]}} : {data: {day: 'Day01', topic: 'từ đến day 3'}});
+    ]}}));
   range.run("input.value = 'tao mindmap từ day 1 đến day 3';");
   await range.run('send()');
-  assert.deepEqual(range.calls.find(call => call.url === '/api/mindmap/overview').body, {scope: ['Day01', 'Day02', 'Day03']});
+  assert.deepEqual(range.calls.find(call => call.url === '/api/chat').body,
+    {question: 'tao mindmap từ day 1 đến day 3', scope: null, context: null});
   assert.equal(range.calls.filter(call => call.url === '/api/mindmap/intent' || call.url === '/api/mindmap/generate').length, 0);
   assert.equal(range.elements.get('status').textContent, ''); checks++;
 
   const rangeTopic = await setup(async () => ({data: {branches: []}}));
   rangeTopic.run("input.value = 'tạo mindmap về Transformer từ day 1 đến day 3';");
   await rangeTopic.run('send()');
-  assert.deepEqual(rangeTopic.calls.find(call => call.url === '/api/mindmap/generate').body,
-    {topic: 'Transformer', day_id: null, scope: ['Day01', 'Day02', 'Day03']}); checks++;
+  assert.deepEqual(rangeTopic.calls.find(call => call.url === '/api/chat').body,
+    {question: 'tạo mindmap về Transformer từ day 1 đến day 3', scope: null, context: null}); checks++;
 
   for (const question of ['tạo mindmap day 1 và day 3', 'tạo mindmap day 1, 3']) {
     const parsed = range.run(`parseMindmapIntent(${JSON.stringify(question)})`);
@@ -145,12 +149,45 @@ async function main() {
     assert.equal(parsed.topic, '');
   } checks++;
 
-  const invalid = await setup(async () => ({data: {branches: []}}));
+  const invalid = await setup(async () => ({status: 422, data: {detail: 'Phạm vi ngày không hợp lệ'}}));
   invalid.run("input.value = 'mindmap day 3 đến day 1';");
   await invalid.run('send()');
-  assert.equal(invalid.calls.length, 1); // Only the initial catalog request.
+  assert.equal(invalid.calls.filter(call => call.url === '/api/chat').length, 1);
   assert.match(invalid.elements.get('status').textContent, /Phạm vi ngày không hợp lệ/);
   assert.equal(invalid.run('busy'), false); checks++;
+
+  const composite = 'tạo mindmap các file tài liệu tôi cần học tên gì nằm ở day nào để tôi hiểu về tranformers';
+  const context = {task: 'study_materials', topic: 'transformers', document_ids: ['doc1']};
+  const conversation = await setup(async () => ({data: {context}}));
+  conversation.run(`input.value = ${JSON.stringify(composite)};`);
+  await conversation.run('send()');
+  conversation.run("input.value = 'tạo mindmap các tài liệu đó';");
+  await conversation.run('send()');
+  const chatCalls = conversation.calls.filter(call => call.url === '/api/chat');
+  assert.equal(chatCalls[0].body.question, composite);
+  assert.deepEqual(chatCalls[1].body.context, context); checks++;
+
+  const tree = ui.run(`buildMindmapTree('Tài liệu học', [{label: 'Day 01', nodes: [{
+    label: 'Day01/tên tài liệu dài & đầy đủ.pdf', filename: 'Day01/tên tài liệu dài & đầy đủ.pdf',
+    page_number: 3, day_label: 'Day 01', reason: '<script>unsafe</script>', role: 'core', pages: [3, 4],
+    sources: [{evidence_id: 'E2', filename: 'Day01/tên tài liệu dài & đầy đủ.pdf', page_number: 3},
+              {evidence_id: 'E5', filename: 'Day01/tên tài liệu dài & đầy đủ.pdf', page_number: 4}]
+  }]}])`);
+  const descendants = tree.querySelectorAll('*');
+  assert.equal(descendants.find(element => element.className === 'mindmap-node').textContent,
+    'Day01/tên tài liệu dài & đầy đủ.pdf');
+  const reason = descendants.find(element => element.className === 'mindmap-document-reason');
+  assert.equal(reason.textContent, '<script>unsafe</script>');
+  assert.equal(reason.html, undefined);
+  assert.equal(descendants.filter(element => element.className === 'citation-chip').length, 2);
+  assert.match(descendants.find(element => element.className === 'mindmap-document-location').textContent, /Slide 3, 4/); checks++;
+
+  const failed = await setup(async () => ({data: {status: 'retrieval_timeout', output_format: 'mindmap', branches: [],
+    answer: 'Tìm tài liệu quá thời gian; chưa thể kết luận kho thiếu nội dung.'}}));
+  failed.run("input.value = 'mindmap tài liệu về A';");
+  await failed.run('send()');
+  assert.equal(failed.elements.get('messages').querySelectorAll('*').some(element => element.className === 'mindmap-tree'), false);
+  assert.equal(failed.run('busy'), false); checks++;
 
   console.log(`UI regression checks passed: ${checks}`);
 }

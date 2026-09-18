@@ -19,7 +19,7 @@ from .blocks import merge_continuations
 from .fusion import reciprocal_rank_fusion
 from .config import enabled, integer, retrieval_text, visual_evidence_text
 from .rerank import rerank
-from .query import prepare_query
+from .query import normalize_topic, prepare_query
 from app.ingestion.metadata import build_day_catalog, enrich_slide_metadata, normalize_day_id, record_day_metadata, resolve_day_scope
 from app.runtime import bounded_lock
 from app.viewer.evidence import normalized_bbox
@@ -343,11 +343,22 @@ class RetrievalService:
                     "total": len(slides), "offset": offset, "limit": limit,
                     "slides": deepcopy(slides[offset:offset + limit])}
 
-    def retrieve(self, question: str, top_k: int = 5, *, day_id=None, scope=None) -> dict:
+    def normalize_topic(self, topic):
+        with bounded_lock(self._lock):
+            self._load()
+            normalized, aliases, corrections = normalize_topic(topic, self.lexical.document_frequency)
+            return {"topic": normalized, "aliases": aliases, "corrections": corrections}
+
+    def retrieve(self, question: str, top_k: int = 5, *, day_id=None, scope=None,
+                 document_discovery=None, evidence_top_k=None) -> dict:
         if not isinstance(question, str):
             raise TypeError("question must be a string")
         if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 0:
             raise ValueError("top_k must be a non-negative integer")
+        if document_discovery is not None and type(document_discovery) is not bool:
+            raise ValueError("document_discovery must be boolean")
+        if evidence_top_k is not None and (type(evidence_top_k) is not int or not 1 <= evidence_top_k <= 40):
+            raise ValueError("evidence_top_k must be between 1 and 40")
         canonical = normalize_day_id(day_id) if day_id is not None else None
         days = resolve_day_scope(day_id, scope)
         if not question.strip() or top_k == 0:
@@ -356,8 +367,10 @@ class RetrievalService:
             self._load()
             limit = max(integer("RERANK_CANDIDATES", 20), top_k)
             search_question, discovery, corrections = prepare_query(question, self.lexical.document_frequency)
+            if document_discovery is not None:
+                discovery = document_discovery
             if discovery:
-                limit = max(40, limit)
+                limit = max(80 if document_discovery else 40, limit)
             if days is not None:
                 allowed = [i for i, slide in enumerate(self.slides) if slide["day_id"] in days]
                 if not allowed:
@@ -388,6 +401,8 @@ class RetrievalService:
                         distinct.append(hit)
                 hits = distinct
             selected_k = min(top_k, integer("RERANK_TOP_K", top_k)) if enabled("RERANK_ENABLED") else top_k
+            if document_discovery is True:
+                selected_k = top_k
             primary, debug = rerank(search_question, hits, selected_k)
             debug["dense_used"] = bool(dense)
             debug["dense_fallback"] = bool(self.dense_enabled and not dense)
@@ -415,15 +430,58 @@ class RetrievalService:
             expanded = primary + context
             try:
                 evidence = self._evidence(search_question, expanded, rank_blocks=True, debug=debug,
-                                          document_discovery=discovery)
+                                          document_discovery=discovery, evidence_top_k=evidence_top_k)
             except Exception as error:
                 logger.warning("Block ranking failed; using V1 evidence: %s", type(error).__name__)
                 debug["block_ranking_fallback"] = True
                 debug["block_ranking_method"] = "lexical_v1"
                 evidence = self._evidence(search_question, primary if discovery else primary[:3],
-                                          document_discovery=discovery)
+                                          document_discovery=discovery, evidence_top_k=evidence_top_k)
             return {"slides": primary, "primary_slides": primary,
                     "context_slides": context, "evidence": evidence, "debug": debug}
+
+    def search_documents(self, topic, *, scope=None, limit=12):
+        """Explicit document discovery, independent of the user's phrasing."""
+        return self.retrieve(topic, top_k=max(1, min(12, limit)), scope=scope,
+                             document_discovery=True, evidence_top_k=max(1, min(12, limit)))
+
+    def read_document_evidence(self, document_ids, question, *, scope=None, pages_per_document=3):
+        """Read bounded real pages from selected documents; no second model call."""
+        if len(document_ids) > 12 or not 1 <= pages_per_document <= 3:
+            raise ValueError("Too many documents or pages")
+        days = resolve_day_scope(scope=scope)
+        requested = set(document_ids)
+        with bounded_lock(self._lock):
+            self._load()
+            selected = [slide for slide in self.slides if slide["document_id"] in requested
+                        and (days is None or slide["day_id"] in days)]
+            index = BM25Index([retrieval_text(slide) for slide in selected])
+            rankings = dict(index.search(question, len(selected)))
+            evidence = []
+            for document_id in document_ids:
+                candidates = [(rankings.get(i, 0), slide) for i, slide in enumerate(selected)
+                              if slide["document_id"] == document_id]
+                candidates.sort(key=lambda pair: (-pair[0], pair[1]["page_number"]))
+                for _, slide in candidates[:pages_per_document]:
+                    # Native and Vision remain distinct sources, as in the QA pipeline.
+                    for kind, text in (("native", slide.get("text", "")),
+                                       ("visual", visual_evidence_text(slide))):
+                        if not text or not _is_usable_evidence_text(text):
+                            continue
+                        # Keep a verbatim window around a query term instead of
+                        # sending entire decks or cutting off a late topic mention.
+                        terms = [re.escape(token) for token in tokenize(question) if len(token) > 2]
+                        match = re.search(r"(?<!\w)(?:" + "|".join(terms) + r")(?!\w)", text, re.I) if terms else None
+                        start = max(0, match.start() - 300) if match else 0
+                        evidence.append({
+                            "slide_id": slide["slide_id"], "document_id": document_id,
+                            "filename": slide["filename"], "page_number": slide["page_number"],
+                            **record_day_metadata(slide), "quote": text[start:start + 1600], "bbox": None,
+                            "block_id": slide["slide_id"] + "_visual" if kind == "visual" else None,
+                            "evidence_type": kind, "source_role": "primary",
+                            "vision_used": bool(visual_evidence_text(slide)),
+                        })
+            return evidence
 
     def _neighbors(self, primary):
         seen = {hit["slide_id"] for hit in primary}
@@ -523,7 +581,8 @@ class RetrievalService:
             return {"day": normalize_day_id(day),
                     "branches": _group_into_branches(nodes, agenda_items, dense=self.dense, slides=self.slides)}
 
-    def _evidence(self, question, hits, rank_blocks=False, debug=None, document_discovery=False):
+    def _evidence(self, question, hits, rank_blocks=False, debug=None, document_discovery=False,
+                  evidence_top_k=None):
         query = set(tokenize(question))
         candidates = []
         for slide_rank, hit in enumerate(hits):
@@ -573,7 +632,8 @@ class RetrievalService:
         per_slide = {}
         documents = set()
         for block_score, _, _, hit, block in candidates:
-            if len(evidence) >= (integer("EVIDENCE_TOP_K", 5) if rank_blocks else 5):
+            if len(evidence) >= (evidence_top_k if evidence_top_k is not None else
+                                 integer("EVIDENCE_TOP_K", 5) if rank_blocks else 5):
                 break
             if rank_blocks and per_slide.get(hit["slide_id"], 0) >= integer("MAX_EVIDENCE_PER_SLIDE", 2):
                 continue

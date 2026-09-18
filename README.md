@@ -45,6 +45,7 @@ Trên Windows/Python có cơ chế dò WMI, ứng dụng giới hạn bước đ
 
 - `GET /api/health`: `{"status":"ok"}`; xác nhận HTTP server đang chạy, không xác nhận chỉ mục đã sẵn sàng.
 - `POST /api/ask`: nhận `{"question":"Gradient descent là gì?"}`, trả `answer` và `citations` theo `HACKATHON_PLAN.md`.
+- `POST /api/chat`: luồng chat có agent điều phối; nhận câu hỏi nguyên bản, `scope`/`day_id` và `context` tùy chọn. Tự phân biệt hỏi đáp, tìm tài liệu học, mindmap chủ đề và tổng quan Day. Trả thêm `task`, `output_format`, `status`, `documents`, `branches` và context cho lượt tiếp theo.
 - `GET /api/days`: danh sách ngày học, các tài liệu của từng ngày, số slide và tài liệu chưa gán ngày.
 - `GET /api/days/Day01`: metadata của ngày và danh sách tất cả PDF thuộc ngày đó.
 - `GET /api/days/Day01/slides?offset=0&limit=100`: toàn bộ slide của ngày theo thứ tự tên tệp và số trang, có phân trang (tối đa 200 slide mỗi lần).
@@ -94,6 +95,20 @@ Với kho PDF lớn, chạy `python scripts/ingest.py --vision-workers 4` để 
 `python -m unittest app.api.test_integration -v` kiểm tra pipeline V1 thật, nguồn Vision tới QA/viewer, metadata của các block trùng nội dung và toàn bộ pipeline V2 với model/client giả lập. Năm tình huống hợp đồng gồm câu hỏi tiếng Việt, hỏi tiếng Việt về slide tiếng Anh, slide hình ảnh, ngữ cảnh lân cận và câu ngoài kho. Các kiểm thử cô lập cấu hình `.env` để không gọi API trả phí. Chúng xác nhận luồng dữ liệu và fallback, không chứng minh chất lượng mô hình trên bài giảng thực tế. Để kiểm chứng chất lượng, cần chạy năm tình huống trên PDF thật, kiểm tra trang/quote, mở nguồn và xác nhận từ chối trả lời câu ngoài kho.
 
 ## Chạy kiểm thử
+
+Giao diện chat dùng `/api/chat` để giữ cả ý định và định dạng. Ví dụ “tạo mindmap các file tài liệu tôi cần học tên gì nằm ở day nào để tôi hiểu về tranformers” tạo cây **chủ đề → Day → tên file**, kèm lý do, các trang nguồn và nút mở slide. Tên file/Day/trang được backend nối từ catalog; model chỉ chọn document/evidence ID và giải thích từ nguồn. Mindmap khái niệm và các endpoint cũ tiếp tục được hỗ trợ.
+
+Agent dùng workflow có giới hạn: tối đa hai vòng retrieval và ba lượt LLM cho lập kế hoạch/thẩm định. Các ID evidence duy nhất trong từng request; nguồn giả, nguồn chéo tài liệu và nguồn ngoài phạm vi bị loại. Câu tiếp nối “tạo mindmap các tài liệu đó” dùng topic và document IDs từ context đã kiểm tra. Agent hiện là một bộ điều phối, chưa bật multiagent hoặc index tóm tắt cấp tài liệu.
+
+`AGENT_MAX_DOCUMENTS` mặc định 8 (tối đa 12), timeout lập kế hoạch 8 giây và thẩm định 20 giây, đều dùng chung deadline request. Không cần API key mới; dùng `LLM_MODEL`, retrieval và rerank đã cấu hình. `status` phân biệt `no_evidence`, `partial`, `needs_clarification`, `retrieval_timeout`, `model_unavailable`, `invalid_output` với kết quả `completed`. Model lỗi thì chỉ hiện các đoạn nhắc chủ đề dưới vai trò `candidate`/chưa thẩm định, không biến hit bất kỳ thành tài liệu bắt buộc học. Danh sách tìm được không bảo đảm đầy đủ toàn khóa học.
+
+Kiểm tra agent với server đang chạy và API thật:
+
+```powershell
+python scripts/verify_agent.py
+```
+
+Lệnh kiểm tra câu hỏi kết hợp có lỗi chính tả, nguồn/tên file/Day/trang, mở ảnh trang, câu tiếp nối, tài liệu trong phạm vi, QA thường, mindmap Day 1–3, từ chối chủ đề ngoài kho và lỗi phạm vi. Nó gọi provider đã cấu hình và có thể phát sinh phí; báo cáo tại `data/verification/agent_live_report.json`. Kiểm thử offline nằm trong `app.agent.test_agent` và được chạy bởi `unittest discover`.
 
 Kiểm chứng các API/model đã cấu hình bằng smoke test có đáp án biết trước:
 
