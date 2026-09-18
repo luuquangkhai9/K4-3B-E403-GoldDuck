@@ -17,7 +17,7 @@ class TextBlock(TypedDict):
     bbox: list[float]
 
 
-class SlideRecord(TypedDict):
+class _NativeSlideRecord(TypedDict):
     slide_id: str
     document_id: str
     filename: str
@@ -27,3 +27,8 @@ class SlideRecord(TypedDict):
     blocks: list[TextBlock]
     page_width: float
     page_height: float
+
+
+class SlideRecord(_NativeSlideRecord, total=False):
+    visual_analysis: dict
+    retrieval_text: str

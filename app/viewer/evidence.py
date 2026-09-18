@@ -10,7 +10,7 @@ def normalized_bbox(value):
         return None
     try:
         box = [float(v) for v in value]
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         return None
     if not all(math.isfinite(v) and 0 <= v <= 1 for v in box):
         return None
@@ -34,7 +34,7 @@ def viewer_url(citation: dict) -> str:
 def resolve_pdf(root: Path, filename: str) -> Path:
     """Allow nested PDFs, but reject traversal, absolute paths, and symlink escapes."""
     root = root.resolve()
-    if not filename or Path(filename).is_absolute():
+    if not filename or "\x00" in filename or Path(filename).is_absolute():
         raise ValueError("Tên tài liệu không hợp lệ.")
     target = (root / filename).resolve()
     if not target.is_relative_to(root) or target.suffix.lower() != ".pdf":

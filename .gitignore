@@ -3,4 +3,6 @@ __pycache__/
 .env
 node_modules/
 data/pdf/
+data/verification/
+data/index/vision/
 .venv/

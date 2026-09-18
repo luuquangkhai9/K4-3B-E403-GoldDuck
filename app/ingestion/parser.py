@@ -6,7 +6,7 @@ from pathlib import Path
 from .models import Document, SlideRecord, TextBlock
 
 
-def parse_pdf(path: str | Path, *, filename: str | None = None) -> tuple[Document, list[SlideRecord]]:
+def parse_pdf(path: str | Path, *, filename: str | None = None, vision=None) -> tuple[Document, list[SlideRecord]]:
     try:
         import pymupdf as fitz
     except ImportError as exc:
@@ -59,4 +59,6 @@ def parse_pdf(path: str | Path, *, filename: str | None = None) -> tuple[Documen
                 "page_width": width,
                 "page_height": height,
             })
+            if vision is not None:
+                vision.enrich(page, slides[-1])
     return document, slides

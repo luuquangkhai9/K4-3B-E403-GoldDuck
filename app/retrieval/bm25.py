@@ -28,6 +28,15 @@ class BM25Index:
                 from rank_bm25 import BM25Okapi
 
                 self.backend = BM25Okapi(self.tokens)
+                # Positive IDF keeps frequent query terms from reversing the
+                # relevance order, and matches the emergency fallback formula.
+                size = len(self.tokens)
+                self.backend.idf = {
+                    token: math.log(1 + (size - df + 0.5) / (df + 0.5))
+                    for token, df in Counter(
+                        token for tokens in self.tokens for token in set(tokens)
+                    ).items()
+                }
             except ImportError:
                 pass
         self.counts = [Counter(tokens) for tokens in self.tokens]
@@ -58,8 +67,7 @@ class BM25Index:
                     )
                     score += idf * frequency * 2.5 / denominator
                 scores.append(score)
-        # rank_bm25 can assign zero/negative IDF to common terms. Keep lexical
-        # matches in that case, but never return slides with no matching token.
+        # Never return slides with no matching token.
         query_tokens = set(query)
         candidates = [
             (index, float(score))

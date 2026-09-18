@@ -2,6 +2,7 @@
 
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 from threading import Lock
 
@@ -69,7 +70,36 @@ def ask(request: AskRequest):
         retrieved = retrieval.retrieve(question=request.question, top_k=top_k)
         result = qa.answer(question=request.question, evidence=retrieved.get("evidence", []))
         # Validate the contract and always create local, correctly encoded source links.
-        response = QAResponse.model_validate(result)
+        payload = dict(result)
+        if isinstance(retrieved.get("debug"), dict):
+            payload["debug"] = retrieved["debug"]
+        # QA can renumber evidence IDs: match sources by their actual content.
+        sources = defaultdict(list)
+        for item in retrieved.get("evidence", []):
+            if isinstance(item, dict):
+                key = (item.get("filename"), item.get("page_number"), item.get("quote", item.get("text")))
+                sources[key].append(item)
+        slides = {
+            item.get("slide_id"): item
+            for key in ("slides", "primary_slides", "context_slides")
+            for item in retrieved.get(key, []) if isinstance(item, dict)
+        }
+        payload["citations"] = []
+        for citation in result.get("citations", []):
+            item = dict(citation)
+            matches = sources.get((item.get("filename"), item.get("page_number"), item.get("quote")), [])
+            for key in ("slide_id", "block_id"):
+                if item.get(key) is not None:
+                    matches = [source for source in matches if source.get(key) == item[key]]
+            source = matches[0] if len(matches) == 1 else {}
+            for key in ("slide_id", "block_id", "source_role", "block_score", "evidence_type"):
+                if key in source:
+                    item[key] = source[key]
+            visual = slides.get(item.get("slide_id"), {}).get("visual_analysis")
+            if isinstance(visual, dict):
+                item["vision_used"] = visual.get("status") == "success"
+            payload["citations"].append(item)
+        response = QAResponse.model_validate(payload)
         for citation in response.citations:
             citation.bbox = normalized_bbox(citation.bbox)
             citation.viewer_url = viewer_url(citation.model_dump())

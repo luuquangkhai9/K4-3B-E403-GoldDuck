@@ -1,6 +1,7 @@
 """Run with python -m unittest app.retrieval.test_retrieval."""
 
 import json
+import os
 from pathlib import Path
 import tempfile
 import types
@@ -10,6 +11,7 @@ from unittest.mock import patch
 import numpy as np
 
 from .dense import DenseIndex
+from .bm25 import BM25Index
 from .fusion import reciprocal_rank_fusion
 from .service import RetrievalService
 
@@ -26,6 +28,14 @@ def slide(index, text):
 
 class RetrievalTests(unittest.TestCase):
     def setUp(self):
+        environment = patch.dict(os.environ, {
+            "RERANK_ENABLED": "false", "NEIGHBOR_EXPANSION_ENABLED": "false",
+            "RERANK_CANDIDATES": "20", "RERANK_TOP_K": "5",
+            "RERANK_TIMEOUT_SECONDS": "10",
+            "EVIDENCE_TOP_K": "5", "MAX_EVIDENCE_PER_SLIDE": "2",
+        })
+        environment.start()
+        self.addCleanup(environment.stop)
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.path = Path(self.directory.name)
@@ -86,6 +96,32 @@ class RetrievalTests(unittest.TestCase):
         fused = reciprocal_rank_fusion([[(0, 100), (1, 1)], [(1, 0.9)]])
         self.assertEqual(fused[0][0], 1)
         self.assertAlmostEqual(fused[0][1], 1 / 62 + 1 / 61)
+
+    def test_common_terms_rank_strong_matches_first(self):
+        texts = ["alpha alpha alpha", "alpha", "alpha filler filler"]
+        ranking = BM25Index(texts).search("alpha")
+        with patch.dict("sys.modules", {"rank_bm25": None}):
+            fallback = BM25Index(texts).search("alpha")
+        self.assertEqual([i for i, _ in ranking], [0, 1, 2])
+        self.assertEqual([i for i, _ in ranking], [i for i, _ in fallback])
+
+    def test_invalid_index_preserves_last_valid_corpus(self):
+        service = RetrievalService(self.path, dense_enabled=False)
+        service.retrieve("descent")
+        invalid = [
+            {"slide_id": 123}, {"slide_id": []}, {"filename": None},
+            {"page_number": True}, {"blocks": "invalid"},
+            {"blocks": [None]}, {"blocks": [{"text": 123}]},
+            {"blocks": [{"text": "descent", "block_id": []}]},
+            {"retrieval_text": []}, {"visual_analysis": "invalid"},
+        ]
+        for update in invalid:
+            with self.subTest(update=update):
+                self.write([dict(slide(9, "descent changed"), **update)])
+                result = service.retrieve("descent")
+                self.assertEqual(result["slides"][0]["page_number"], 1)
+        self.write([slide(9, "descent recovered")])
+        self.assertEqual(service.retrieve("descent")["slides"][0]["page_number"], 9)
 
     def test_dense_prefixes_cpu_cache_and_invalidation(self):
         calls = []

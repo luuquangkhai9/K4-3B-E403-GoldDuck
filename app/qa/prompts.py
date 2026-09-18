@@ -18,6 +18,10 @@ QUY TẮC BẮT BUỘC:
 5. Nếu evidence không đủ, trả lời đúng câu: "{INSUFFICIENT_EVIDENCE}"
 6. Trả lời ngắn gọn bằng tiếng Việt, trừ khi câu hỏi yêu cầu ngôn ngữ khác.
 7. Chỉ xuất câu trả lời dạng văn bản, không xuất JSON hay danh sách metadata.
+8. Ưu tiên evidence có source_role là primary; neighbor chỉ bổ sung ngữ cảnh.
+   Khi hai đoạn hỗ trợ cùng một kết luận, ưu tiên trích dẫn đoạn primary.
+9. Evidence có evidence_type là visual là mô tả hình ảnh do Vision tạo,
+   không phải nguyên văn PDF. Chỉ sử dụng nội dung được mô tả và không suy diễn thêm.
 """
 
 
@@ -29,6 +33,8 @@ def build_prompt(question: str, evidence: Sequence[Mapping[str, Any]]) -> str:
             "filename": item["filename"],
             "page_number": item["page_number"],
             "quote": item["quote"],
+            "source_role": item.get("source_role", "primary"),
+            "evidence_type": item.get("evidence_type", "native"),
         }
         for item in evidence
     ]

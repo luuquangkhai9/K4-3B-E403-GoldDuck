@@ -8,12 +8,16 @@ import json
 import logging
 import math
 import os
+import re
 from pathlib import Path
 import threading
 from urllib.parse import urlencode
 
 from .bm25 import BM25Index, tokenize
+from .blocks import merge_continuations
 from .fusion import reciprocal_rank_fusion
+from .config import enabled, integer, retrieval_text, visual_evidence_text
+from .rerank import rerank
 
 logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -58,16 +62,32 @@ class RetrievalService:
                     raise ValueError("slide must be an object")
                 if not all(key in slide for key in ("slide_id", "filename", "page_number")):
                     raise ValueError("slide missing citation metadata")
+                for key in ("slide_id", "filename"):
+                    if not isinstance(slide[key], str) or not slide[key].strip():
+                        raise ValueError(f"{key} must be a non-empty string")
                 if slide["slide_id"] in seen:
                     raise ValueError("duplicate slide_id")
                 if not isinstance(slide.get("text", ""), str):
                     raise ValueError("slide text must be a string")
-                if not isinstance(slide["page_number"], int) or slide["page_number"] < 1:
+                if slide.get("retrieval_text") is not None and not isinstance(slide["retrieval_text"], str):
+                    raise ValueError("retrieval_text must be a string or null")
+                if slide.get("visual_analysis") is not None and not isinstance(slide["visual_analysis"], dict):
+                    raise ValueError("visual_analysis must be an object or null")
+                if isinstance(slide["page_number"], bool) or not isinstance(slide["page_number"], int) or slide["page_number"] < 1:
                     raise ValueError("page_number must be one-based")
+                blocks = slide.get("blocks")
+                if blocks is not None:
+                    if not isinstance(blocks, list):
+                        raise ValueError("slide blocks must be a list")
+                    for block in blocks:
+                        if not isinstance(block, dict) or not isinstance(block.get("text", ""), str):
+                            raise ValueError("block must be an object with string text")
+                        if block.get("block_id") is not None and not isinstance(block["block_id"], str):
+                            raise ValueError("block_id must be a string or null")
                 seen.add(slide["slide_id"])
-                if slide.get("text", "").strip():
+                if retrieval_text(slide).strip():
                     slides.append(slide)
-            lexical = BM25Index([slide["text"] for slide in slides])
+            lexical = BM25Index([retrieval_text(slide) for slide in slides])
         except (OSError, ValueError, TypeError) as error:
             # Ingestion may be in the middle of a write. Keep the last valid
             # corpus and retry on the next request rather than cache the failure.
@@ -81,7 +101,7 @@ class RetrievalService:
                 from .dense import DenseIndex
 
                 self.dense = DenseIndex(slides, self.index_dir)
-            except ImportError as error:
+            except Exception as error:
                 logger.warning("Dense dependencies unavailable; using BM25: %s", error)
         self._signature = signature
 
@@ -94,27 +114,75 @@ class RetrievalService:
             return {"slides": [], "evidence": []}
         with self._lock:
             self._load()
-            limit = max(20, top_k)
+            limit = max(integer("RERANK_CANDIDATES", 20), top_k)
             lexical = self.lexical.search(question, limit)
             dense = self.dense.search(question, limit) if self.dense else []
             rankings = [ranking for ranking in (lexical, dense) if ranking]
-            fused = reciprocal_rank_fusion(rankings, top_k)
+            fused = reciprocal_rank_fusion(rankings, limit)
             hits = [
                 dict(self.slides[index], score=score, rank=rank)
                 for rank, (index, score) in enumerate(fused, start=1)
             ]
-            return {"slides": hits, "evidence": self._evidence(question, hits[:3])}
+            if not hits:
+                return {"slides": [], "evidence": []}
+            selected_k = min(top_k, integer("RERANK_TOP_K", top_k)) if enabled("RERANK_ENABLED") else top_k
+            primary, debug = rerank(question, hits, selected_k)
+            if debug.get("reranker_fallback"):
+                primary = hits[:top_k]
+            primary = [dict(hit, source_role="primary", rank=rank)
+                       for rank, hit in enumerate(primary, 1)]
+            debug["first_stage_count"] = len(hits)
+            try:
+                context = self._neighbors(primary) if enabled("NEIGHBOR_EXPANSION_ENABLED") else []
+                debug["neighbor_fallback"] = False
+            except Exception:
+                context = []
+                debug["neighbor_fallback"] = True
+            expanded = primary + context
+            try:
+                evidence = self._evidence(question, expanded, rank_blocks=True, debug=debug)
+            except Exception as error:
+                logger.warning("Block ranking failed; using V1 evidence: %s", type(error).__name__)
+                debug["block_ranking_fallback"] = True
+                debug["block_ranking_method"] = "lexical_v1"
+                evidence = self._evidence(question, primary[:3])
+            return {"slides": primary, "primary_slides": primary,
+                    "context_slides": context, "evidence": evidence, "debug": debug}
 
-    def _evidence(self, question, hits):
+    def _neighbors(self, primary):
+        seen = {hit["slide_id"] for hit in primary}
+        pages = {(slide.get("document_id", slide["filename"]), slide["filename"], slide["page_number"]): slide
+                 for slide in self.slides}
+        context = []
+        distance = integer("NEIGHBOR_DISTANCE", 1, minimum=0)
+        for hit in primary:
+            for offset in range(-distance, distance + 1):
+                neighbor = pages.get((hit.get("document_id", hit["filename"]), hit["filename"], hit["page_number"] + offset))
+                if neighbor is not None and neighbor["slide_id"] not in seen:
+                    seen.add(neighbor["slide_id"])
+                    context.append(dict(neighbor, source_role="neighbor", neighbor_of=hit["slide_id"], distance=offset))
+        return context
+
+    def _evidence(self, question, hits, rank_blocks=False, debug=None):
         query = set(tokenize(question))
         candidates = []
         for slide_rank, hit in enumerate(hits):
-            blocks = hit.get("blocks") or []
+            blocks = list(hit.get("blocks") or [])
             if not blocks:
-                blocks = [{"block_id": None, "text": hit["text"], "bbox": None}]
+                blocks = [{"block_id": None, "text": hit.get("text", ""), "bbox": None}]
+            if rank_blocks:
+                blocks = merge_continuations(blocks, hit.get("text", ""))
+            visual_text = visual_evidence_text(hit)
+            if visual_text:
+                blocks.append({"block_id": hit["slide_id"] + "_visual", "text": visual_text,
+                               "bbox": None, "evidence_type": "visual"})
             for block_rank, block in enumerate(blocks):
                 text = block.get("text", "")
                 if not isinstance(text, str) or not text.strip():
+                    continue
+                if rank_blocks and (re.fullmatch(r"\s*(?:page\s*)?\d+\s*", text, re.I)
+                                    or re.match(r"\s*(?:copyright\b|©|all rights reserved\b)", text, re.I)
+                                    or len(text.strip()) < 3):
                     continue
                 tokens = set(tokenize(text))
                 matching = query & tokens
@@ -124,9 +192,26 @@ class RetrievalService:
                 )
                 score = weighted_overlap / math.sqrt(max(1, len(tokens)))
                 candidates.append((score, slide_rank, block_rank, hit, block))
+        if rank_blocks and self.dense and candidates:
+            scores = self.dense.score_blocks(question, [item[4]["text"] for item in candidates])
+            if len(scores) != len(candidates) or not all(math.isfinite(score) for score in scores):
+                raise ValueError("Invalid block scores")
+            candidates = [(score, *item[1:]) for score, item in zip(scores, candidates)]
+            if debug is not None:
+                debug["block_ranking_method"] = "e5"
+        elif debug is not None:
+            debug["block_ranking_method"] = "lexical"
+        if debug is not None:
+            debug["block_ranking_fallback"] = bool(rank_blocks and self.dense_enabled and not self.dense)
         candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
         evidence = []
-        for _, _, _, hit, block in candidates[:5]:
+        per_slide = {}
+        for block_score, _, _, hit, block in candidates:
+            if len(evidence) >= (integer("EVIDENCE_TOP_K", 5) if rank_blocks else 5):
+                break
+            if rank_blocks and per_slide.get(hit["slide_id"], 0) >= integer("MAX_EVIDENCE_PER_SLIDE", 2):
+                continue
+            per_slide[hit["slide_id"]] = per_slide.get(hit["slide_id"], 0) + 1
             evidence_id = f"E{len(evidence) + 1}"
             parameters = {"file": hit["filename"], "page": hit["page_number"], "evidence": evidence_id}
             bbox = block.get("bbox")
@@ -142,10 +227,10 @@ class RetrievalService:
                         height = hit.get("page_height", hit.get("height"))
                         bbox = [bbox[0] / width, bbox[1] / height, bbox[2] / width, bbox[3] / height] if width and height else None
                     if bbox is not None and not (
-                        0 <= bbox[0] <= bbox[2] <= 1 and 0 <= bbox[1] <= bbox[3] <= 1
+                        0 <= bbox[0] < bbox[2] <= 1 and 0 <= bbox[1] < bbox[3] <= 1
                     ):
                         bbox = None
-                except (ValueError, TypeError, ZeroDivisionError):
+                except (ValueError, TypeError, ZeroDivisionError, OverflowError):
                     bbox = None
             else:
                 bbox = None
@@ -159,6 +244,9 @@ class RetrievalService:
                 "page_number": hit["page_number"],
                 "quote": block["text"],
                 "bbox": bbox,
+                "block_score": block_score,
+                "source_role": hit.get("source_role", "primary"),
+                "evidence_type": block.get("evidence_type", "native"),
                 "viewer_url": "/viewer?" + urlencode(parameters),
             })
         return evidence

@@ -26,7 +26,7 @@ def main():
     retrieval, qa = get_services()
     generator = ObservedGenerator()
     qa.generator = generator
-    question = sys.argv[1] if len(sys.argv) > 1 else "Tranformer là gì"
+    question = sys.argv[1] if len(sys.argv) > 1 else "Transformer là gì?"
     with TestClient(app) as client:
         response = client.post("/api/ask", json={"question": question})
         result = response.json()
@@ -36,7 +36,11 @@ def main():
                 page_text = pdf[citation["page_number"] - 1].get_text()
             checks.append({
                 "evidence_id": citation["evidence_id"],
-                "quote_on_page": " ".join(citation["quote"].split()) in " ".join(page_text.split()),
+                "evidence_type": citation.get("evidence_type", "native"),
+                "quote_on_page": None if citation.get("evidence_type") == "visual" else (
+                    " ".join(citation["quote"].split()) in " ".join(page_text.split())
+                ),
+                "visual_requires_manual_review": citation.get("evidence_type") == "visual",
                 "viewer_status": client.get(citation["viewer_url"]).status_code,
             })
         print(json.dumps({

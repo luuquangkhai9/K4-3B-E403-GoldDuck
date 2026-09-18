@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import os
 import tempfile
+from .config import retrieval_text
 
 # Hugging Face's concurrent cache probe can attempt symlinks before Windows
 # privilege detection finishes. Ordinary file copies need no administrator.
@@ -37,7 +38,7 @@ class DenseIndex:
         self.model = None
         self.embeddings = None
         self.failed = False
-        payload = [[slide["slide_id"], slide.get("text", "")] for slide in slides]
+        payload = [[slide["slide_id"], retrieval_text(slide)] for slide in slides]
         self.fingerprint = hashlib.sha256(
             json.dumps(payload, ensure_ascii=False).encode("utf-8")
         ).hexdigest()
@@ -70,7 +71,7 @@ class DenseIndex:
             pass
         self.embeddings = np.asarray(
             self.model.encode(
-                ["passage: " + slide.get("text", "") for slide in self.slides],
+                ["passage: " + retrieval_text(slide) for slide in self.slides],
                 batch_size=32,
                 normalize_embeddings=True,
                 convert_to_numpy=True,
@@ -94,6 +95,22 @@ class DenseIndex:
         except OSError as error:
             logger.warning("Embedding cache could not be saved: %s", error)
 
+    def score_blocks(self, question, texts):
+        if self.failed:
+            raise RuntimeError("Dense model unavailable")
+        if self.embeddings is None:
+            self._initialize()
+        vectors = np.asarray(self.model.encode(
+            ["passage: " + text for text in texts], batch_size=32,
+            normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False))
+        query = np.asarray(self.model.encode(
+            ["query: " + question], normalize_embeddings=True,
+            convert_to_numpy=True, show_progress_bar=False))[0]
+        scores = vectors @ query
+        if scores.shape != (len(texts),) or not np.isfinite(scores).all():
+            raise ValueError("Invalid block embeddings")
+        return [float(value) for value in scores]
+
     def search(self, question: str, limit: int = 20) -> list[tuple[int, float]]:
         if self.failed or not self.slides or limit <= 0:
             return []
@@ -107,6 +124,8 @@ class DenseIndex:
                 show_progress_bar=False,
             )[0]
             scores = self.embeddings @ query
+            if scores.shape != (len(self.slides),) or not np.isfinite(scores).all():
+                raise ValueError("Invalid slide embeddings")
             return [
                 (int(index), float(scores[index]))
                 for index in np.argsort(-scores, kind="stable")[:limit]

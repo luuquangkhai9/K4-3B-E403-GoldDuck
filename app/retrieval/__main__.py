@@ -4,10 +4,13 @@ import argparse
 import logging
 import time
 
-from .service import RetrievalService
+from dotenv import load_dotenv
+
+from .service import PROJECT_ROOT, RetrievalService
 
 
 def main():
+    load_dotenv(PROJECT_ROOT / ".env")
     parser = argparse.ArgumentParser(description="Build and check the slide retrieval index")
     parser.add_argument("--query", default="MCP và A2A khác nhau như thế nào?")
     parser.add_argument("--require-dense", action="store_true")
