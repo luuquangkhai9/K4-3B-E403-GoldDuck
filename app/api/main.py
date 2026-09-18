@@ -61,12 +61,18 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/lessons")
+def lessons():
+    retrieval, _ = get_services()
+    return {"lessons": retrieval.available_scopes}
+
+
 @app.post("/api/ask", response_model=QAResponse)
 def ask(request: AskRequest):
     try:
         retrieval, qa = get_services()
         top_k = max(1, min(20, int(os.getenv("TOP_K", "5"))))
-        retrieved = retrieval.retrieve(question=request.question, top_k=top_k)
+        retrieved = retrieval.retrieve(question=request.question, top_k=top_k, scope=request.scope)
         result = qa.answer(question=request.question, evidence=retrieved.get("evidence", []))
         # Validate the contract and always create local, correctly encoded source links.
         response = QAResponse.model_validate(result)

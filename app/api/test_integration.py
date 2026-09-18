@@ -68,7 +68,7 @@ class DemoIntegrationTests(unittest.TestCase):
 
     def test_health_and_ui(self):
         self.assertEqual(self.client.get("/api/health").json(), {"status": "ok"})
-        self.assertIn("Hỏi đáp bài giảng", self.client.get("/").text)
+        self.assertIn("Trợ giảng AI", self.client.get("/").text)
         self.assertEqual(self.client.get("/static/app.js").status_code, 200)
 
     def test_five_questions_reach_exact_pages_and_quotes(self):

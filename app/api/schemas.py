@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class AskRequest(BaseModel):
     question: Annotated[str, Field(min_length=1, max_length=4000)]
+    scope: list[str] | None = Field(default=None, max_length=50)
 
     @field_validator("question")
     @classmethod
@@ -15,6 +16,14 @@ class AskRequest(BaseModel):
         if not value:
             raise ValueError("Vui lòng nhập câu hỏi.")
         return value
+
+    @field_validator("scope")
+    @classmethod
+    def clean_scope(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        cleaned = [item.strip() for item in value if isinstance(item, str) and item.strip()]
+        return cleaned or None
 
 
 class Citation(BaseModel):

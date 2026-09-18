@@ -85,7 +85,7 @@ class RetrievalService:
                 logger.warning("Dense dependencies unavailable; using BM25: %s", error)
         self._signature = signature
 
-    def retrieve(self, question: str, top_k: int = 5) -> dict:
+    def retrieve(self, question: str, top_k: int = 5, scope: list[str] | None = None) -> dict:
         if not isinstance(question, str):
             raise TypeError("question must be a string")
         if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 0:
@@ -94,20 +94,39 @@ class RetrievalService:
             return {"slides": [], "evidence": []}
         with self._lock:
             self._load()
-            limit = max(20, top_k)
+            # A learner reviewing specific lessons wants answers grounded only
+            # in those lessons, not pulled in from the rest of the corpus. The
+            # lexical/dense backends search the whole corpus regardless, so
+            # widen their search window to cover everything when scoped and
+            # filter hits down to the requested lesson folders afterward.
+            scoped = bool(scope)
+            prefixes = tuple(s if s.endswith("/") else s + "/" for s in scope) if scoped else None
+            limit = len(self.slides) if scoped else max(20, top_k)
             lexical = self.lexical.search(question, limit)
             dense = self.dense.search(question, limit) if self.dense else []
+            if scoped:
+                def in_scope(index: int) -> bool:
+                    return self.slides[index]["filename"].startswith(prefixes)
+                lexical = [item for item in lexical if in_scope(item[0])][: max(20, top_k)]
+                dense = [item for item in dense if in_scope(item[0])][: max(20, top_k)]
             rankings = [ranking for ranking in (lexical, dense) if ranking]
             fused = reciprocal_rank_fusion(rankings, top_k)
             hits = [
                 dict(self.slides[index], score=score, rank=rank)
                 for rank, (index, score) in enumerate(fused, start=1)
             ]
-            return {"slides": hits, "evidence": self._evidence(question, hits[:3])}
+            return {"slides": hits, "evidence": self._evidence(question, hits[:5])}
 
-    def _evidence(self, question, hits):
+    @property
+    def available_scopes(self) -> list[str]:
+        """Lesson folders (e.g. "Day03") a caller can pass as retrieve(scope=...)."""
+        with self._lock:
+            self._load()
+            return sorted({slide["filename"].split("/", 1)[0] for slide in self.slides if "/" in slide["filename"]})
+
+    def _evidence(self, question, hits, limit=12, top_slide_cap=7):
         query = set(tokenize(question))
-        candidates = []
+        by_slide = [[] for _ in hits]
         for slide_rank, hit in enumerate(hits):
             blocks = hit.get("blocks") or []
             if not blocks:
@@ -123,10 +142,31 @@ class RetrievalService:
                     for token in matching
                 )
                 score = weighted_overlap / math.sqrt(max(1, len(tokens)))
-                candidates.append((score, slide_rank, block_rank, hit, block))
-        candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+                by_slide[slide_rank].append((score, slide_rank, block_rank, hit, block))
+        # The top-ranked page can hold the answer in blocks that share few
+        # literal words with the question (e.g. numbered list items under a
+        # header that matches the query instead), so guarantee its blocks
+        # reach the model in reading order. But near-duplicate PDFs of the
+        # same lecture often crowd the top ranks with repeated content, so
+        # also guarantee every other top page at least one shot at its
+        # best-scoring block before any page gets a second slot.
+        selected = list(by_slide[0][:top_slide_cap]) if by_slide else []
+        seen_positions = {(item[1], item[2]) for item in selected}
+        for slide_rank in range(1, len(hits)):
+            best = max(by_slide[slide_rank], default=None, key=lambda item: item[0])
+            if best is not None and best[0] > 0 and len(selected) < limit:
+                selected.append(best)
+                seen_positions.add((best[1], best[2]))
+        remaining = [
+            item
+            for scored in by_slide
+            for item in scored
+            if (item[1], item[2]) not in seen_positions
+        ]
+        remaining.sort(key=lambda item: (-item[0], item[1], item[2]))
+        selected += remaining[: max(0, limit - len(selected))]
         evidence = []
-        for _, _, _, hit, block in candidates[:5]:
+        for _, _, _, hit, block in selected[:limit]:
             evidence_id = f"E{len(evidence) + 1}"
             parameters = {"file": hit["filename"], "page": hit["page_number"], "evidence": evidence_id}
             bbox = block.get("bbox")
